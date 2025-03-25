@@ -99,4 +99,4 @@ export const importOrdersFromExcel = (file: File): Promise<OrderList> => {
     reader.onerror = () => reject(new Error('파일을 읽는 중 오류가 발생했습니다.'));
     reader.readAsArrayBuffer(file);
   });
-}; 
+};

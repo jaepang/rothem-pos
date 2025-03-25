@@ -14,4 +14,4 @@ export interface Order {
   memo?: string;
 }
 
-export type OrderList = Order[]; 
+export type OrderList = Order[];

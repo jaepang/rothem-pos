@@ -98,4 +98,4 @@ export const getPrinterStatus = async (): Promise<boolean> => {
     console.error('프린터 상태 확인 실패:', error);
     return false;
   }
-}; 
+};

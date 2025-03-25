@@ -1,19 +1,28 @@
 import { useState, useEffect, useRef } from 'react';
 import { MenuItem, MenuList } from '@/shared/types/menu';
 import { loadMenuFromJson, saveMenuToJson, importMenuFromExcel, exportMenuToExcel, deleteMenuItem } from '@/shared/utils/menu';
-import { saveImage } from '@/shared/utils/image';
+import { saveImage, deleteImage } from '@/shared/utils/image';
 
 export function MenuManagement() {
   const [menus, setMenus] = useState<MenuList>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const excelInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const loadedMenus = loadMenuFromJson();
     setMenus(loadedMenus);
   }, []);
 
-  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExportMenus = () => {
+    if (menus.length === 0) {
+      alert('내보낼 메뉴가 없습니다.');
+      return;
+    }
+    exportMenuToExcel(menus);
+  };
+
+  const handleImportMenus = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -21,13 +30,14 @@ export function MenuManagement() {
       const importedMenus = await importMenuFromExcel(file);
       setMenus(importedMenus);
       saveMenuToJson(importedMenus);
+      alert(`${importedMenus.length}개의 메뉴를 가져왔습니다.`);
     } catch (error) {
-      console.error('엑셀 파일 가져오기 실패:', error);
+      alert('메뉴를 가져오는데 실패했습니다.');
+    } finally {
+      if (excelInputRef.current) {
+        excelInputRef.current.value = '';
+      }
     }
-  };
-
-  const handleExport = () => {
-    exportMenuToExcel(menus);
   };
 
   const handleToggleSoldOut = (menuId: string) => {
@@ -78,24 +88,24 @@ export function MenuManagement() {
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold">메뉴 관리</h2>
         <div className="space-x-2">
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleFileImport}
-            className="hidden"
-            id="excel-upload"
-          />
-          <label
-            htmlFor="excel-upload"
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 cursor-pointer"
-          >
-            엑셀 가져오기
-          </label>
           <button
-            onClick={handleExport}
-            className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
+            onClick={handleExportMenus}
+            className="px-4 py-2 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
           >
             엑셀 내보내기
+          </button>
+          <input
+            ref={excelInputRef}
+            type="file"
+            accept=".xlsx"
+            onChange={handleImportMenus}
+            className="hidden"
+          />
+          <button
+            onClick={() => excelInputRef.current?.click()}
+            className="px-4 py-2 text-sm text-white bg-green-500 rounded hover:bg-green-600"
+          >
+            엑셀 가져오기
           </button>
         </div>
       </div>
