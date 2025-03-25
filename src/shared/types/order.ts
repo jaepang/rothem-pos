@@ -10,7 +10,6 @@ export interface Order {
   items: OrderItem[];
   totalAmount: number;
   orderDate: string;
-  tableNumber?: string;
   memo?: string;
 }
 
