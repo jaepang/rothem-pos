@@ -1,101 +1,90 @@
-import { ThermalPrinter, PrinterTypes, CharacterSet } from 'node-thermal-printer';
-import { Order } from '../types/order';
+import { ThermalPrinter, PrinterTypes } from 'node-thermal-printer';
+import { Order, OrderItem } from '@/shared/types/order';
 
-interface PrinterConfig {
-  type: PrinterTypes;
-  interface: string;
-  width: number;
-  characterSet: CharacterSet;
-  removeSpecialCharacters: boolean;
-  options?: {
-    timeout?: number;
-  };
-}
-
-let printerConfig: PrinterConfig | null = null;
-
-export const initializePrinter = (config: PrinterConfig) => {
-  printerConfig = config;
+const printerConfig = {
+  type: PrinterTypes.EPSON,
+  interface: 'printer:POS-58',
+  options: {
+    timeout: 3000
+  }
 };
 
-export const printOrder = async (order: Order): Promise<void> => {
-  if (!printerConfig) {
-    throw new Error('프린터가 초기화되지 않았습니다.');
-  }
+let printer: ThermalPrinter | null = null;
 
+export const initializePrinter = async (): Promise<void> => {
   try {
-    const printer = new ThermalPrinter(printerConfig);
-    await printer.init();
-
-    // 주문서 헤더
-    printer.alignCenter();
-    printer.bold(true);
-    printer.setTextSize(1, 1);
-    printer.println('주문서');
-    printer.bold(false);
-    printer.newLine();
-
-    // 주문 정보
-    printer.alignLeft();
-    printer.println(`주문번호: ${order.id}`);
-    printer.println(`주문시간: ${new Date(order.orderDate).toLocaleString()}`);
-    if (order.tableNumber) {
-      printer.println(`테이블: ${order.tableNumber}`);
-    }
-    printer.drawLine();
-
-    // 주문 항목
-    printer.bold(true);
-    printer.println('메뉴                수량      금액');
-    printer.bold(false);
-    printer.drawLine();
-
-    order.items.forEach((item) => {
-      const menuName = item.menuItem.name.padEnd(16, ' ');
-      const quantity = item.quantity.toString().padStart(3, ' ');
-      const amount = (item.menuItem.price * item.quantity).toLocaleString().padStart(8, ' ');
-      printer.println(`${menuName} ${quantity}   ${amount}`);
-    });
-
-    printer.drawLine();
-
-    // 합계
-    printer.alignRight();
-    printer.bold(true);
-    printer.println(`합계: ${order.totalAmount.toLocaleString()}원`);
-    printer.bold(false);
-
-    // 메모
-    if (order.memo) {
-      printer.alignLeft();
-      printer.newLine();
-      printer.println('[메모]');
-      printer.println(order.memo);
-    }
-
-    // 푸터
-    printer.newLine();
-    printer.alignCenter();
-    printer.println('이용해 주셔서 감사합니다.');
-    printer.cut();
-
-    await printer.execute();
+    printer = new ThermalPrinter(printerConfig);
+    await printer.isPrinterConnected();
   } catch (error) {
-    console.error('주문서 출력 실패:', error);
-    throw error;
+    console.error('프린터 초기화 실패:', error);
+    printer = null;
   }
 };
 
 export const getPrinterStatus = async (): Promise<boolean> => {
-  if (!printerConfig) return false;
-
+  if (!printer) {
+    return false;
+  }
   try {
-    const printer = new ThermalPrinter(printerConfig);
-    await printer.init();
-    const isConnected = printer.isPrinterConnected();
-    return isConnected;
+    const p = printer;
+    return await p.isPrinterConnected();
   } catch (error) {
     console.error('프린터 상태 확인 실패:', error);
     return false;
+  }
+};
+
+export const printOrder = async (order: Order): Promise<void> => {
+  if (!printer) {
+    throw new Error('프린터가 연결되지 않았습니다.');
+  }
+
+  try {
+    const p = printer;
+    // 헤더 출력
+    p.alignCenter();
+    p.bold(true);
+    p.setTextSize(1, 1);
+    p.println('주문서');
+    p.println('===================');
+    p.bold(false);
+    p.alignLeft();
+
+    // 주문 정보 출력
+    p.println(`주문번호: ${order.id}`);
+    p.println(`주문시간: ${new Date(order.orderDate).toLocaleString()}`);
+    p.println('-------------------');
+
+    // 주문 항목 출력
+    order.items.forEach((item: OrderItem) => {
+      p.println(`${item.menuItem.name} x ${item.quantity}`);
+      p.alignRight();
+      p.println(`${(item.menuItem.price * item.quantity).toLocaleString()}원`);
+      p.alignLeft();
+    });
+
+    // 합계 출력
+    p.println('===================');
+    p.bold(true);
+    p.println('합계');
+    p.alignRight();
+    p.println(`${order.totalAmount.toLocaleString()}원`);
+    p.alignLeft();
+    p.bold(false);
+
+    // 메모 출력
+    if (order.memo) {
+      p.println('-------------------');
+      p.println('메모:');
+      p.println(order.memo);
+    }
+
+    // 푸터 출력
+    p.println('\n\n');
+    p.cut();
+    await p.execute();
+  } catch (error) {
+    console.error('주문서 출력 실패:', error);
+    throw new Error('주문서 출력에 실패했습니다.');
   }
 };
