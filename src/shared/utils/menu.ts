@@ -67,11 +67,13 @@ export const importMenuFromExcel = (file: File): Promise<MenuList> => {
           name: row.메뉴명,
           price: row.가격,
           imageUrl: null,
-          isAvailable: true
+          isAvailable: true,
+          isSoldOut: false,
+          isFavorite: false
         }));
 
         resolve(menuList);
-      } catch (error) {
+      } catch {
         reject(new Error('엑셀 파일 형식이 올바르지 않습니다.'));
       }
     };

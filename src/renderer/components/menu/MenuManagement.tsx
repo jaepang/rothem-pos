@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MenuItem, MenuList } from '@/shared/types/menu';
 import { loadMenuFromJson, saveMenuToJson, importMenuFromExcel, exportMenuToExcel, deleteMenuItem } from '@/shared/utils/menu';
-import { saveImage, deleteImage } from '@/shared/utils/image';
+import { saveImage } from '@/shared/utils/image';
 
 export function MenuManagement() {
   const [menus, setMenus] = useState<MenuList>([]);
@@ -31,7 +31,7 @@ export function MenuManagement() {
       setMenus(importedMenus);
       saveMenuToJson(importedMenus);
       alert(`${importedMenus.length}개의 메뉴를 가져왔습니다.`);
-    } catch (error) {
+    } catch {
       alert('메뉴를 가져오는데 실패했습니다.');
     } finally {
       if (excelInputRef.current) {
