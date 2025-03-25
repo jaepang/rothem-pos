@@ -1,48 +1,13 @@
 {
   "name": "rodem-pos",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "main": "dist-electron/index.js",
+  "version": "0.0.1",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && electron-builder",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "electron:dev": "vite --mode development",
-    "electron:build": "tsc -b && vite build && electron-builder",
-    "postinstall": "electron-builder install-app-deps"
-  },
-  "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.21.0",
-    "@radix-ui/react-dialog": "^1.1.6",
-    "@radix-ui/react-tabs": "^1.1.3",
-    "@types/electron": "^1.6.12",
-    "@types/node": "^22.13.13",
-    "@types/react": "^19.0.12",
-    "@types/react-dom": "^19.0.4",
-    "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.21",
-    "electron": "^25.9.8",
-    "electron-builder": "^24.9.1",
-    "electron-store": "^10.0.1",
-    "eslint": "^9.21.0",
-    "eslint-plugin-react-hooks": "^5.1.0",
-    "eslint-plugin-react-refresh": "^0.4.19",
-    "globals": "^15.15.0",
-    "node-thermal-printer": "^4.4.4",
-    "postcss": "^8.5.3",
-    "shadcn-ui": "^0.9.5",
-    "tailwindcss": "^4.0.15",
-    "typescript": "~5.7.2",
-    "typescript-eslint": "^8.24.1",
-    "vite": "^6.2.0",
-    "vite-plugin-electron": "^0.15.5",
-    "xlsx": "^0.18.5"
+    "build": "tsc && vite build && electron-builder",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
   },
   "build": {
     "appId": "com.rodem.pos",
@@ -50,19 +15,48 @@
     "directories": {
       "output": "release"
     },
-    "files": [
-      "dist/**/*",
-      "dist-electron/**/*"
-    ],
-    "mac": {
-      "target": ["dmg"]
-    },
     "win": {
-      "target": ["nsis"]
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
     }
   },
+  "dependencies": {
+    "@shadcn/ui": "^0.0.4",
+    "@types/electron": "^1.6.12",
+    "@types/node": "^22.13.13",
+    "autoprefixer": "^10.4.21",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "electron": "^35.0.3",
+    "electron-builder": "^25.1.8",
+    "lucide-react": "^0.483.0",
+    "node-thermal-printer": "^4.4.4",
+    "postcss": "^8.5.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.2",
+    "tailwindcss": "^4.0.15",
+    "tailwindcss-animate": "^1.0.7",
+    "vite-plugin-electron": "^0.29.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.21.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.24.1",
+    "vite": "^6.2.3"
+  },
   "pnpm": {
-    "ignoredBuiltDependencies": [
+    "onlyBuiltDependencies": [
       "electron",
       "esbuild"
     ]
