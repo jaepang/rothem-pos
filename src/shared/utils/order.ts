@@ -1,6 +1,6 @@
-import * as XLSX from 'xlsx';
-import { Order, OrderList } from '../types/order';
-import { loadMenuFromJson } from './menu';
+import * as XLSX from 'xlsx'
+import { Order, OrderList } from '../types/order'
+import { loadMenuFromJson } from './menu'
 
 interface ExcelOrder {
   주문번호: string;
@@ -14,7 +14,7 @@ interface ExcelOrder {
 }
 
 export const exportOrdersToExcel = (orders: OrderList): void => {
-  const excelData: ExcelOrder[] = [];
+  const excelData: ExcelOrder[] = []
 
   orders.forEach(order => {
     order.items.forEach(item => {
@@ -27,13 +27,13 @@ export const exportOrdersToExcel = (orders: OrderList): void => {
         금액: item.menuItem.price * item.quantity,
         주문시간: new Date(order.orderDate).toLocaleString(),
         메모: order.memo || ''
-      });
-    });
-  });
+      })
+    })
+  })
 
-  const worksheet = XLSX.utils.json_to_sheet(excelData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, '주문내역');
+  const worksheet = XLSX.utils.json_to_sheet(excelData)
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, '주문내역')
 
   // 열 너비 설정
   const columnWidths = [
@@ -45,30 +45,30 @@ export const exportOrdersToExcel = (orders: OrderList): void => {
     { wch: 10 }, // 금액
     { wch: 20 }, // 주문시간
     { wch: 30 }, // 메모
-  ];
-  worksheet['!cols'] = columnWidths;
+  ]
+  worksheet['!cols'] = columnWidths
 
-  XLSX.writeFile(workbook, `주문내역_${new Date().toISOString().split('T')[0]}.xlsx`);
-};
+  XLSX.writeFile(workbook, `주문내역_${new Date().toISOString().split('T')[0]}.xlsx`)
+}
 
 export const importOrdersFromExcel = (file: File): Promise<OrderList> => {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    const menus = loadMenuFromJson();
+    const reader = new FileReader()
+    const menus = loadMenuFromJson()
 
     reader.onload = (e) => {
       try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet) as ExcelOrder[];
+        const data = new Uint8Array(e.target?.result as ArrayBuffer)
+        const workbook = XLSX.read(data, { type: 'array' })
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+        const jsonData = XLSX.utils.sheet_to_json(worksheet) as ExcelOrder[]
 
-        const orderMap = new Map<string, Order>();
+        const orderMap = new Map<string, Order>()
 
         jsonData.forEach((row) => {
-          const menuItem = menus.find(m => m.name === row.메뉴);
+          const menuItem = menus.find(m => m.name === row.메뉴)
           if (!menuItem) {
-            throw new Error(`메뉴를 찾을 수 없습니다: ${row.메뉴}`);
+            throw new Error(`메뉴를 찾을 수 없습니다: ${row.메뉴}`)
           }
 
           if (!orderMap.has(row.주문번호)) {
@@ -79,24 +79,24 @@ export const importOrdersFromExcel = (file: File): Promise<OrderList> => {
               orderDate: new Date(row.주문시간).toISOString(),
               tableNumber: row.테이블번호 || undefined,
               memo: row.메모 || undefined
-            });
+            })
           }
 
-          const order = orderMap.get(row.주문번호)!;
+          const order = orderMap.get(row.주문번호)!
           order.items.push({
             menuItem,
             quantity: row.수량
-          });
-          order.totalAmount += row.금액;
-        });
+          })
+          order.totalAmount += row.금액
+        })
 
-        resolve(Array.from(orderMap.values()));
+        resolve(Array.from(orderMap.values()))
       } catch (error) {
-        reject(error);
+        reject(error)
       }
-    };
+    }
 
-    reader.onerror = () => reject(new Error('파일을 읽는 중 오류가 발생했습니다.'));
-    reader.readAsArrayBuffer(file);
-  });
-};
+    reader.onerror = () => reject(new Error('파일을 읽는 중 오류가 발생했습니다.'))
+    reader.readAsArrayBuffer(file)
+  })
+}

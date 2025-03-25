@@ -1,53 +1,53 @@
-import React, { useEffect, useState } from 'react';
-import { MenuItem, MenuList } from '@/shared/types/menu';
-import { Order, OrderItem } from '@/shared/types/order';
-import { loadMenuFromJson } from '@/shared/utils/menu';
-import { initializePrinter, getPrinterStatus, printOrder } from '@/shared/utils/printer';
+import React, { useEffect, useState } from 'react'
+import { MenuItem, MenuList } from '@/shared/types/menu'
+import { Order, OrderItem } from '@/shared/types/order'
+import { loadMenuFromJson } from '@/shared/utils/menu'
+import { initializePrinter, getPrinterStatus, printOrder } from '@/shared/utils/printer'
 
 const OrderManagement: React.FC = () => {
-  const [menus, setMenus] = useState<MenuList>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('전체');
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  const [memo, setMemo] = useState<string>('');
-  const [isPrinterConnected, setIsPrinterConnected] = useState<boolean>(false);
+  const [menus, setMenus] = useState<MenuList>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>('전체')
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([])
+  const [memo, setMemo] = useState<string>('')
+  const [isPrinterConnected, setIsPrinterConnected] = useState<boolean>(false)
 
   useEffect(() => {
     const loadMenus = async () => {
-      const loadedMenus = await loadMenuFromJson();
-      setMenus(loadedMenus);
-    };
+      const loadedMenus = await loadMenuFromJson()
+      setMenus(loadedMenus)
+    }
 
     const initPrinter = async () => {
-      await initializePrinter();
-      const status = await getPrinterStatus();
-      setIsPrinterConnected(status);
-    };
+      await initializePrinter()
+      const status = await getPrinterStatus()
+      setIsPrinterConnected(status)
+    }
 
-    loadMenus();
-    initPrinter();
-  }, []);
+    loadMenus()
+    initPrinter()
+  }, [])
 
-  const categories = ['전체', ...new Set(menus.map(menu => menu.category))];
+  const categories = ['전체', ...new Set(menus.map(menu => menu.category))]
   const filteredMenus = selectedCategory === '전체'
     ? menus
-    : menus.filter(menu => menu.category === selectedCategory);
+    : menus.filter(menu => menu.category === selectedCategory)
 
   const handleAddItem = (menu: MenuItem) => {
     setOrderItems(prev => {
-      const existingItem = prev.find(item => item.menuItem.id === menu.id);
+      const existingItem = prev.find(item => item.menuItem.id === menu.id)
       if (existingItem) {
         return prev.map(item =>
           item.menuItem.id === menu.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
-        );
+        )
       }
-      return [...prev, { menuItem: menu, quantity: 1 }];
-    });
-  };
+      return [...prev, { menuItem: menu, quantity: 1 }]
+    })
+  }
 
   const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
-    if (newQuantity < 0) return;
+    if (newQuantity < 0) return
     setOrderItems(prev =>
       newQuantity === 0
         ? prev.filter(item => item.menuItem.id !== itemId)
@@ -56,19 +56,19 @@ const OrderManagement: React.FC = () => {
               ? { ...item, quantity: newQuantity }
               : item
           )
-    );
-  };
+    )
+  }
 
   const handlePrintOrder = async () => {
     try {
       if (!isPrinterConnected) {
-        alert('프린터가 연결되지 않았습니다.');
-        return;
+        alert('프린터가 연결되지 않았습니다.')
+        return
       }
 
       if (orderItems.length === 0) {
-        alert('주문 항목을 선택해주세요.');
-        return;
+        alert('주문 항목을 선택해주세요.')
+        return
       }
 
       const order: Order = {
@@ -80,19 +80,19 @@ const OrderManagement: React.FC = () => {
         ),
         orderDate: new Date().toISOString(),
         memo: memo || undefined
-      };
+      }
 
-      await printOrder(order);
-      alert('주문서가 출력되었습니다.');
+      await printOrder(order)
+      alert('주문서가 출력되었습니다.')
       
       // 주문 초기화
-      setOrderItems([]);
-      setMemo('');
+      setOrderItems([])
+      setMemo('')
     } catch (error) {
-      console.error('주문서 출력 실패:', error);
-      alert('주문서 출력에 실패했습니다.');
+      console.error('주문서 출력 실패:', error)
+      alert('주문서 출력에 실패했습니다.')
     }
-  };
+  }
 
   return (
     <div className="p-4">
@@ -206,7 +206,7 @@ const OrderManagement: React.FC = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export { OrderManagement };
+export { OrderManagement }

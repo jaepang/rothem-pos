@@ -1,5 +1,5 @@
-import { MenuList } from '../types/menu';
-import { Order } from '../types/order';
+import { MenuList } from '../types/menu'
+import { Order } from '../types/order'
 
 interface ElectronAPI {
   versions: NodeJS.ProcessVersions

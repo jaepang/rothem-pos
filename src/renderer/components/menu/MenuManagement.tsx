@@ -1,87 +1,87 @@
-import { useState, useEffect, useRef } from 'react';
-import { MenuItem, MenuList } from '@/shared/types/menu';
-import { loadMenuFromJson, saveMenuToJson, importMenuFromExcel, exportMenuToExcel, deleteMenuItem } from '@/shared/utils/menu';
-import { saveImage } from '@/shared/utils/image';
+import { useState, useEffect, useRef } from 'react'
+import { MenuItem, MenuList } from '@/shared/types/menu'
+import { loadMenuFromJson, saveMenuToJson, importMenuFromExcel, exportMenuToExcel, deleteMenuItem } from '@/shared/utils/menu'
+import { saveImage } from '@/shared/utils/image'
 
 export function MenuManagement() {
-  const [menus, setMenus] = useState<MenuList>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const excelInputRef = useRef<HTMLInputElement>(null);
+  const [menus, setMenus] = useState<MenuList>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const excelInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    const loadedMenus = loadMenuFromJson();
-    setMenus(loadedMenus);
-  }, []);
+    const loadedMenus = loadMenuFromJson()
+    setMenus(loadedMenus)
+  }, [])
 
   const handleExportMenus = () => {
     if (menus.length === 0) {
-      alert('내보낼 메뉴가 없습니다.');
-      return;
+      alert('내보낼 메뉴가 없습니다.')
+      return
     }
-    exportMenuToExcel(menus);
-  };
+    exportMenuToExcel(menus)
+  }
 
   const handleImportMenus = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const file = event.target.files?.[0]
+    if (!file) return
 
     try {
-      const importedMenus = await importMenuFromExcel(file);
-      setMenus(importedMenus);
-      saveMenuToJson(importedMenus);
-      alert(`${importedMenus.length}개의 메뉴를 가져왔습니다.`);
+      const importedMenus = await importMenuFromExcel(file)
+      setMenus(importedMenus)
+      saveMenuToJson(importedMenus)
+      alert(`${importedMenus.length}개의 메뉴를 가져왔습니다.`)
     } catch {
-      alert('메뉴를 가져오는데 실패했습니다.');
+      alert('메뉴를 가져오는데 실패했습니다.')
     } finally {
       if (excelInputRef.current) {
-        excelInputRef.current.value = '';
+        excelInputRef.current.value = ''
       }
     }
-  };
+  }
 
   const handleToggleSoldOut = (menuId: string) => {
     const updatedMenus = menus.map((menu) =>
       menu.id === menuId ? { ...menu, isSoldOut: !menu.isSoldOut } : menu
-    );
-    setMenus(updatedMenus);
-    saveMenuToJson(updatedMenus);
-  };
+    )
+    setMenus(updatedMenus)
+    saveMenuToJson(updatedMenus)
+  }
 
   const handleToggleFavorite = (menuId: string) => {
     const updatedMenus = menus.map((menu) =>
       menu.id === menuId ? { ...menu, isFavorite: !menu.isFavorite } : menu
-    );
-    setMenus(updatedMenus);
-    saveMenuToJson(updatedMenus);
-  };
+    )
+    setMenus(updatedMenus)
+    saveMenuToJson(updatedMenus)
+  }
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, menuId: string) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const file = event.target.files?.[0]
+    if (!file) return
 
     try {
-      const imageUrl = await saveImage(file, menuId);
+      const imageUrl = await saveImage(file, menuId)
       const updatedMenus = menus.map((menu) =>
         menu.id === menuId ? { ...menu, imageUrl } : menu
-      );
-      setMenus(updatedMenus);
-      saveMenuToJson(updatedMenus);
+      )
+      setMenus(updatedMenus)
+      saveMenuToJson(updatedMenus)
     } catch (error) {
-      console.error('이미지 업로드 실패:', error);
+      console.error('이미지 업로드 실패:', error)
     }
-  };
+  }
 
   const handleDeleteMenu = (menu: MenuItem) => {
-    const updatedMenus = deleteMenuItem(menu, menus);
-    setMenus(updatedMenus);
-    saveMenuToJson(updatedMenus);
-  };
+    const updatedMenus = deleteMenuItem(menu, menus)
+    setMenus(updatedMenus)
+    saveMenuToJson(updatedMenus)
+  }
 
-  const categories = ['all', ...new Set(menus.map((menu) => menu.category))];
+  const categories = ['all', ...new Set(menus.map((menu) => menu.category))]
   const filteredMenus = selectedCategory === 'all'
     ? menus
-    : menus.filter((menu) => menu.category === selectedCategory);
+    : menus.filter((menu) => menu.category === selectedCategory)
 
   return (
     <div className="space-y-6">
@@ -194,5 +194,5 @@ export function MenuManagement() {
         ))}
       </div>
     </div>
-  );
+  )
 } 

@@ -1,12 +1,12 @@
-import eslint from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import tseslint from 'typescript-eslint'
+const eslint = require('@eslint/js')
+const globals = require('globals')
+const reactHooks = require('eslint-plugin-react-hooks')
+const reactRefresh = require('eslint-plugin-react-refresh')
+const tseslint = require('typescript-eslint')
 
-export default tseslint.config(
+module.exports = tseslint.config(
   {
-    ignores: ['**/dist/**', '**/dist-electron/**', '**/release/**', '**/node_modules/**']
+    ignores: ['**/dist/**', '**/dist-electron/**', '**/release/**', '**/node_modules/**', '**/postcss.config.cjs', '**/tailwind.config.{js,cjs}', '**/eslint.config.js']
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
@@ -37,7 +37,7 @@ export default tseslint.config(
         varsIgnorePattern: '^_',
         caughtErrorsIgnorePattern: '^_'
       }],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
@@ -45,7 +45,8 @@ export default tseslint.config(
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true }
-      ]
+      ],
+      'semi': ['error', 'never']
     }
   },
   {
@@ -60,6 +61,9 @@ export default tseslint.config(
         module: true,
         require: true
       }
+    },
+    rules: {
+      'semi': ['error', 'never']
     }
   }
 )

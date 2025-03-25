@@ -86,89 +86,89 @@ const printerConfig = {
   options: {
     timeout: 3000
   }
-};
+}
 
-let printer: ThermalPrinter | null = null;
+let printer: ThermalPrinter | null = null
 
 // 프린터 IPC 핸들러
 ipcMain.handle('printer:initialize', async () => {
   try {
-    printer = new ThermalPrinter(printerConfig);
-    await printer.isPrinterConnected();
-    return true;
+    printer = new ThermalPrinter(printerConfig)
+    await printer.isPrinterConnected()
+    return true
   } catch (error) {
-    console.error('프린터 초기화 실패:', error);
-    printer = null;
-    return false;
+    console.error('프린터 초기화 실패:', error)
+    printer = null
+    return false
   }
-});
+})
 
 ipcMain.handle('printer:getStatus', async () => {
   if (!printer) {
-    return false;
+    return false
   }
   try {
-    return await printer.isPrinterConnected();
+    return await printer.isPrinterConnected()
   } catch (error) {
-    console.error('프린터 상태 확인 실패:', error);
-    return false;
+    console.error('프린터 상태 확인 실패:', error)
+    return false
   }
-});
+})
 
 ipcMain.handle('printer:printOrder', async (_, order) => {
   if (!printer) {
-    throw new Error('프린터가 연결되지 않았습니다.');
+    throw new Error('프린터가 연결되지 않았습니다.')
   }
 
   try {
-    const p = printer;
+    const p = printer
     // 헤더 출력
-    p.alignCenter();
-    p.bold(true);
-    p.setTextSize(1, 1);
-    p.println('주문서');
-    p.println('===================');
-    p.bold(false);
-    p.alignLeft();
+    p.alignCenter()
+    p.bold(true)
+    p.setTextSize(1, 1)
+    p.println('주문서')
+    p.println('===================')
+    p.bold(false)
+    p.alignLeft()
 
     // 주문 정보 출력
-    p.println(`주문번호: ${order.id}`);
-    p.println(`주문시간: ${new Date(order.orderDate).toLocaleString()}`);
-    p.println('-------------------');
+    p.println(`주문번호: ${order.id}`)
+    p.println(`주문시간: ${new Date(order.orderDate).toLocaleString()}`)
+    p.println('-------------------')
 
     // 주문 항목 출력
     order.items.forEach((item: any) => {
-      p.println(`${item.menuItem.name} x ${item.quantity}`);
-      p.alignRight();
-      p.println(`${(item.menuItem.price * item.quantity).toLocaleString()}원`);
-      p.alignLeft();
-    });
+      p.println(`${item.menuItem.name} x ${item.quantity}`)
+      p.alignRight()
+      p.println(`${(item.menuItem.price * item.quantity).toLocaleString()}원`)
+      p.alignLeft()
+    })
 
     // 합계 출력
-    p.println('===================');
-    p.bold(true);
-    p.println('합계');
-    p.alignRight();
-    p.println(`${order.totalAmount.toLocaleString()}원`);
-    p.alignLeft();
-    p.bold(false);
+    p.println('===================')
+    p.bold(true)
+    p.println('합계')
+    p.alignRight()
+    p.println(`${order.totalAmount.toLocaleString()}원`)
+    p.alignLeft()
+    p.bold(false)
 
     // 메모 출력
     if (order.memo) {
-      p.println('-------------------');
-      p.println('메모:');
-      p.println(order.memo);
+      p.println('-------------------')
+      p.println('메모:')
+      p.println(order.memo)
     }
 
     // 푸터 출력
-    p.println('\n\n');
-    p.cut();
-    await p.execute();
+    p.println('\n\n')
+    p.cut()
+    await p.execute()
   } catch (error) {
-    console.error('주문서 출력 실패:', error);
-    throw new Error('주문서 출력에 실패했습니다.');
+    console.error('주문서 출력 실패:', error)
+    throw new Error('주문서 출력에 실패했습니다.')
   }
-});
+})
 
 // The built directory structure
 //

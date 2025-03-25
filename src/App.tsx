@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { MainLayout } from './renderer/components/layout/MainLayout';
-import { MenuManagement } from './renderer/components/menu/MenuManagement';
-import { OrderManagement } from './renderer/components/order/OrderManagement';
+import { useState } from 'react'
+import { MainLayout } from './renderer/components/layout/MainLayout'
+import { MenuManagement } from './renderer/components/menu/MenuManagement'
+import { OrderManagement } from './renderer/components/order/OrderManagement'
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'menu' | 'order'>('order');
+  const [activeTab, setActiveTab] = useState<'menu' | 'order'>('order')
 
   return (
     <MainLayout>
@@ -35,7 +35,7 @@ function App() {
         {activeTab === 'menu' ? <MenuManagement /> : <OrderManagement />}
       </div>
     </MainLayout>
-  );
+  )
 }
 
-export default App;
+export default App

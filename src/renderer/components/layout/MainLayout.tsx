@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode } from 'react'
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -14,5 +14,5 @@ export function MainLayout({ children }: MainLayoutProps) {
       </header>
       <main className="container py-6">{children}</main>
     </div>
-  );
+  )
 } 

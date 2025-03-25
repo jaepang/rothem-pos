@@ -1,4 +1,4 @@
-import { MenuItem } from './menu';
+import { MenuItem } from './menu'
 
 export interface OrderItem {
   menuItem: MenuItem;
