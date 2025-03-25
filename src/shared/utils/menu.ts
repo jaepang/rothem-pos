@@ -1,5 +1,6 @@
 import { MenuItem, MenuList } from '../types/menu';
 import * as XLSX from 'xlsx';
+import { deleteImage } from './image';
 
 const MENU_FILE_PATH = 'menu.json';
 
@@ -23,6 +24,12 @@ export const saveMenuToJson = (menu: MenuList): void => {
   }
 };
 
+interface ExcelMenuItem {
+  name: string;
+  category: string;
+  price: string | number;
+}
+
 export const importMenuFromExcel = (file: File): Promise<MenuList> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -32,15 +39,16 @@ export const importMenuFromExcel = (file: File): Promise<MenuList> => {
         const workbook = XLSX.read(data, { type: 'binary' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const jsonData = XLSX.utils.sheet_to_json<ExcelMenuItem>(worksheet);
 
-        const menuList: MenuList = jsonData.map((item: any) => ({
+        const menuList: MenuList = jsonData.map((item) => ({
           id: crypto.randomUUID(),
           name: item.name || '',
           category: item.category || '기타',
           price: Number(item.price) || 0,
           isSoldOut: false,
           isFavorite: false,
+          imageUrl: null,
         }));
 
         resolve(menuList);
@@ -54,10 +62,22 @@ export const importMenuFromExcel = (file: File): Promise<MenuList> => {
 };
 
 export const exportMenuToExcel = (menu: MenuList): void => {
-  const worksheet = XLSX.utils.json_to_sheet(
-    menu.map(({ id, isSoldOut, isFavorite, ...item }) => item)
-  );
+  const exportData = menu.map(({ name, category, price }) => ({
+    name,
+    category,
+    price,
+  }));
+  
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Menu');
   XLSX.writeFile(workbook, 'menu_export.xlsx');
+};
+
+export const deleteMenuItem = (menu: MenuItem, menus: MenuList): MenuList => {
+  // 이미지 삭제
+  deleteImage(menu.imageUrl);
+  
+  // 메뉴 목록에서 제거
+  return menus.filter((m) => m.id !== menu.id);
 }; 

@@ -5,6 +5,7 @@ export interface MenuItem {
   price: number;
   isSoldOut: boolean;
   isFavorite: boolean;
+  imageUrl: string | null;
 }
 
 export interface MenuCategory {
