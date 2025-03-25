@@ -1,25 +1,13 @@
 import { MenuItem, MenuList } from '../types/menu';
 import * as XLSX from 'xlsx';
 import { deleteImage } from './image';
-import fs from 'fs';
-import path from 'path';
 
-const MENU_FILE_PATH = path.join(process.cwd(), 'data', 'menu.json');
-
-export const loadMenuFromJson = (): MenuList => {
-  if (!fs.existsSync(MENU_FILE_PATH)) {
-    return [];
-  }
-  const data = fs.readFileSync(MENU_FILE_PATH, 'utf-8');
-  return JSON.parse(data);
+export const loadMenuFromJson = async (): Promise<MenuList> => {
+  return await window.electronAPI.menu.loadMenuFromJson();
 };
 
-export const saveMenuToJson = (menuList: MenuList): void => {
-  const dirPath = path.dirname(MENU_FILE_PATH);
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-  fs.writeFileSync(MENU_FILE_PATH, JSON.stringify(menuList, null, 2));
+export const saveMenuToJson = async (menuList: MenuList): Promise<void> => {
+  await window.electronAPI.menu.saveMenuToJson(menuList);
 };
 
 interface ExcelMenuItem {
