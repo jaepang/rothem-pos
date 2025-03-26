@@ -48,36 +48,24 @@ export function AddMenuModal({ isOpen, onClose, onAdd, categories }: AddMenuModa
     }
 
     // 음료 카테고리이고 ice/hot이 모두 선택된 경우 두 개의 메뉴를 추가
-    if (formData.category === '음료' && formData.isIce && formData.isHot) {
+    if (formData.category === '음료') {
       onAdd({
         ...formData,
-        name: `${formData.name} (ICE)`,
-        price: Number(formData.icePrice),
-        isIce: true,
-        isHot: false,
-        imageUrl: ''
-      })
-      onAdd({
-        ...formData,
-        name: `${formData.name} (HOT)`,
-        price: Number(formData.hotPrice),
-        isIce: false,
-        isHot: true,
-        imageUrl: ''
+        name: formData.name,
+        price: Number(formData.isIce ? formData.icePrice : formData.hotPrice),
+        imageUrl: '',
+        isIce: formData.isIce,
+        isHot: formData.isHot
       })
     } else {
-      // 음료 카테고리이고 하나만 선택된 경우 또는 다른 카테고리인 경우
-      const menuName = formData.category === '음료'
-        ? `${formData.name} (${formData.isIce ? 'ICE' : 'HOT'})`
-        : formData.name
-
+      // 다른 카테고리인 경우
       onAdd({
         ...formData,
-        name: menuName,
-        price: formData.category === '음료'
-          ? Number(formData.isIce ? formData.icePrice : formData.hotPrice)
-          : Number(formData.price),
-        imageUrl: ''
+        name: formData.name,
+        price: Number(formData.price),
+        imageUrl: '',
+        isIce: false,
+        isHot: false
       })
     }
 

@@ -197,7 +197,16 @@ export function MenuManagement() {
                 ★
               </button>
             </div>
-            <p className="text-sm text-muted-foreground">{menu.category}</p>
+            <p className="text-sm text-muted-foreground">
+              {menu.category}
+              {menu.category === '음료' && (
+                <span className="ml-2">
+                  {menu.isIce && 'ICE'}
+                  {menu.isIce && menu.isHot && ' / '}
+                  {menu.isHot && 'HOT'}
+                </span>
+              )}
+            </p>
             <p className="font-medium">{menu.price.toLocaleString()}원</p>
             <div className="flex space-x-2">
               <button
