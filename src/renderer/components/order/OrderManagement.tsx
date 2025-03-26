@@ -40,6 +40,7 @@ const OrderManagement: React.FC = () => {
           ...menu,
           displayName: `${menu.name} (HOT)`,
           name: menu.name,
+          price: Number(menu.hotPrice || menu.price),
           isHot: true,
           isIce: false
         })
@@ -49,6 +50,7 @@ const OrderManagement: React.FC = () => {
           ...menu,
           displayName: `${menu.name} (ICE)`,
           name: menu.name,
+          price: Number(menu.icePrice || menu.price),
           isHot: false,
           isIce: true
         })
@@ -124,34 +126,35 @@ const OrderManagement: React.FC = () => {
   }
 
   return (
-    <div className="p-4">
-      <div className="mb-4">
-        <h2 className="text-2xl font-bold mb-2">주문 관리</h2>
-        <div className="flex items-center space-x-2 mb-4">
-          {categories.map(category => (
-            <button
-              key={category}
-              className={`px-4 py-2 rounded ${
-                selectedCategory === category
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200'
-              }`}
-              onClick={() => setSelectedCategory(category)}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-bold">주문 관리</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="flex space-x-2 overflow-x-auto pb-2">
+        {categories.map(category => (
+          <button
+            key={category}
+            className={`px-4 py-2 rounded-md whitespace-nowrap ${
+              selectedCategory === category
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
+            }`}
+            onClick={() => setSelectedCategory(category)}
+          >
+            {category}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div>
-          <h3 className="text-xl font-bold mb-2">메뉴</h3>
-          <div className="grid grid-cols-2 gap-2">
+          <h3 className="text-xl font-bold mb-4">메뉴</h3>
+          <div className="grid grid-cols-2 gap-3">
             {displayMenus.map(menu => (
               <button
                 key={menu.id}
-                className="p-2 bg-white border rounded shadow"
+                className="p-3 bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow"
                 onClick={() => handleAddItem(menu)}
               >
                 <div className="font-bold">{menu.displayName}</div>
@@ -161,26 +164,25 @@ const OrderManagement: React.FC = () => {
           </div>
         </div>
 
-        <div>
-          <h3 className="text-xl font-bold mb-2">주문 내역</h3>
-          <div className="mb-4">
-            <div className="mb-2">
-              <label className="block text-sm font-medium text-gray-700">
-                메모
-              </label>
-              <textarea
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                value={memo}
-                onChange={e => setMemo(e.target.value)}
-              />
-            </div>
+        <div className="bg-gray-50 p-6 rounded-lg">
+          <h3 className="text-xl font-bold mb-4">주문 내역</h3>
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              메모
+            </label>
+            <textarea
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={memo}
+              onChange={e => setMemo(e.target.value)}
+              rows={3}
+            />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3 mb-6">
             {orderItems.map(item => (
               <div
                 key={item.menuItem.id}
-                className="flex items-center justify-between p-2 bg-white border rounded"
+                className="flex items-center justify-between p-3 bg-white border rounded-lg"
               >
                 <div>
                   <div className="font-bold">{item.menuItem.displayName}</div>
@@ -188,18 +190,18 @@ const OrderManagement: React.FC = () => {
                     {(item.menuItem.price * item.quantity).toLocaleString()}원
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <button
-                    className="px-2 py-1 bg-gray-200 rounded"
+                    className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
                     onClick={() =>
                       handleUpdateQuantity(item.menuItem.id, item.quantity - 1)
                     }
                   >
                     -
                   </button>
-                  <span>{item.quantity}</span>
+                  <span className="w-8 text-center">{item.quantity}</span>
                   <button
-                    className="px-2 py-1 bg-gray-200 rounded"
+                    className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
                     onClick={() =>
                       handleUpdateQuantity(item.menuItem.id, item.quantity + 1)
                     }
@@ -211,8 +213,8 @@ const OrderManagement: React.FC = () => {
             ))}
           </div>
 
-          <div className="mt-4">
-            <div className="text-xl font-bold mb-2">
+          <div className="border-t pt-4">
+            <div className="text-xl font-bold mb-4">
               합계: {orderItems
                 .reduce(
                   (sum, item) => sum + item.menuItem.price * item.quantity,
@@ -221,10 +223,10 @@ const OrderManagement: React.FC = () => {
                 .toLocaleString()}원
             </div>
             <button
-              className={`w-full py-2 rounded ${
+              className={`w-full py-3 rounded-lg text-lg font-medium ${
                 isPrinterConnected
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-400 cursor-not-allowed'
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gray-400 text-white cursor-not-allowed'
               }`}
               onClick={handlePrintOrder}
               disabled={!isPrinterConnected}
