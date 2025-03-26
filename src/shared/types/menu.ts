@@ -6,6 +6,8 @@ export interface MenuItem {
   isSoldOut: boolean;
   isFavorite: boolean;
   imageUrl: string | null;
+  isIce?: boolean;
+  isHot?: boolean;
 }
 
 export type MenuList = MenuItem[];
