@@ -22,4 +22,4 @@ export async function readFile(filePath: string): Promise<string> {
 export async function writeFile(filePath: string, content: string): Promise<void> {
   await ensureDataDir()
   await window.electron.fs.writeFile(filePath, content)
-} 
+}

@@ -158,4 +158,4 @@ export function CategoryManagement() {
       </DragDropContext>
     </div>
   )
-} 
+}
