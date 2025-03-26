@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useState, useEffect } from 'react'
 import { MenuItem } from '@/shared/types/menu'
+import { createPortal } from 'react-dom'
 
 interface AddMenuModalProps {
   isOpen: boolean
@@ -13,32 +13,106 @@ export function AddMenuModal({ isOpen, onClose, onAdd, categories }: AddMenuModa
   const [formData, setFormData] = useState({
     name: '',
     price: '',
+    icePrice: '',
+    hotPrice: '',
     category: '',
     isSoldOut: false,
-    isFavorite: false
+    isFavorite: false,
+    isIce: false,
+    isHot: false
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name || !formData.price || !formData.category) {
-      alert('모든 필드를 입력해주세요.')
+    if (!formData.name || !formData.category) {
+      alert('메뉴명과 카테고리를 입력해주세요.')
       return
     }
 
-    onAdd({
-      ...formData,
-      price: Number(formData.price),
-      imageUrl: ''
-    })
+    if (formData.category === '음료') {
+      if (!formData.isIce && !formData.isHot) {
+        alert('음료는 ICE/HOT 중 하나 이상을 선택해야 합니다.')
+        return
+      }
+      if (formData.isIce && !formData.icePrice) {
+        alert('ICE 음료의 가격을 입력해주세요.')
+        return
+      }
+      if (formData.isHot && !formData.hotPrice) {
+        alert('HOT 음료의 가격을 입력해주세요.')
+        return
+      }
+    } else if (!formData.price) {
+      alert('가격을 입력해주세요.')
+      return
+    }
+
+    // 음료 카테고리이고 ice/hot이 모두 선택된 경우 두 개의 메뉴를 추가
+    if (formData.category === '음료' && formData.isIce && formData.isHot) {
+      onAdd({
+        ...formData,
+        name: `${formData.name} (ICE)`,
+        price: Number(formData.icePrice),
+        isIce: true,
+        isHot: false,
+        imageUrl: ''
+      })
+      onAdd({
+        ...formData,
+        name: `${formData.name} (HOT)`,
+        price: Number(formData.hotPrice),
+        isIce: false,
+        isHot: true,
+        imageUrl: ''
+      })
+    } else {
+      // 음료 카테고리이고 하나만 선택된 경우 또는 다른 카테고리인 경우
+      const menuName = formData.category === '음료'
+        ? `${formData.name} (${formData.isIce ? 'ICE' : 'HOT'})`
+        : formData.name
+
+      onAdd({
+        ...formData,
+        name: menuName,
+        price: formData.category === '음료'
+          ? Number(formData.isIce ? formData.icePrice : formData.hotPrice)
+          : Number(formData.price),
+        imageUrl: ''
+      })
+    }
 
     setFormData({
       name: '',
       price: '',
+      icePrice: '',
+      hotPrice: '',
       category: '',
       isSoldOut: false,
-      isFavorite: false
+      isFavorite: false,
+      isIce: false,
+      isHot: false
     })
     onClose()
+  }
+
+  const handleCategoryChange = (category: string) => {
+    if (category === '음료') {
+      setFormData({
+        ...formData,
+        category,
+        hotPrice: formData.price || '', // 기존 가격을 HOT 가격으로 설정
+        price: '', // 일반 가격 필드 초기화
+      })
+    } else {
+      setFormData({
+        ...formData,
+        category,
+        isIce: false,
+        isHot: false,
+        icePrice: '',
+        hotPrice: ''
+      })
+    }
   }
 
   if (!isOpen) return null
@@ -59,20 +133,10 @@ export function AddMenuModal({ isOpen, onClose, onAdd, categories }: AddMenuModa
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">가격</label>
-            <input
-              type="number"
-              value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md"
-              required
-            />
-          </div>
-          <div>
             <label className="block text-sm font-medium mb-1">카테고리</label>
             <select
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               className="w-full px-3 py-2 border rounded-md"
               required
             >
@@ -84,6 +148,69 @@ export function AddMenuModal({ isOpen, onClose, onAdd, categories }: AddMenuModa
               ))}
             </select>
           </div>
+          {formData.category === '음료' ? (
+            <div className="space-y-4">
+              <div className="flex space-x-4">
+                <div className="flex-1 space-y-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.isIce}
+                      onChange={(e) => setFormData({ ...formData, isIce: e.target.checked })}
+                      className="rounded"
+                    />
+                    <span className="text-sm">ICE</span>
+                  </label>
+                  <div className="h-[42px]">
+                    {formData.isIce && (
+                      <input
+                        type="number"
+                        value={formData.icePrice}
+                        onChange={(e) => setFormData({ ...formData, icePrice: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-md"
+                        placeholder="ICE 가격"
+                        required
+                      />
+                    )}
+                  </div>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.isHot}
+                      onChange={(e) => setFormData({ ...formData, isHot: e.target.checked })}
+                      className="rounded"
+                    />
+                    <span className="text-sm">HOT</span>
+                  </label>
+                  <div className="h-[42px]">
+                    {formData.isHot && (
+                      <input
+                        type="number"
+                        value={formData.hotPrice}
+                        onChange={(e) => setFormData({ ...formData, hotPrice: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-md"
+                        placeholder="HOT 가격"
+                        required
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium mb-1">가격</label>
+              <input
+                type="number"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md"
+                required
+              />
+            </div>
+          )}
           <div className="flex items-center space-x-4">
             <label className="flex items-center space-x-2">
               <input
