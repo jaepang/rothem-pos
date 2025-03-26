@@ -6,9 +6,28 @@ const CATEGORY_FILE_PATH = 'categories.json'
 export async function loadCategories(): Promise<CategoryList> {
   try {
     const data = await readFile(CATEGORY_FILE_PATH)
-    return JSON.parse(data)
+    const categories = JSON.parse(data) as CategoryList
+    
+    // '음료' 카테고리가 없으면 추가
+    if (!categories.some(category => category.name === '음료')) {
+      categories.push({
+        id: crypto.randomUUID(),
+        name: '음료',
+        order: categories.length
+      })
+      await saveCategories(categories)
+    }
+    
+    return categories
   } catch {
-    return []
+    // 파일이 없는 경우 '음료' 카테고리만 포함하여 반환
+    const defaultCategories: CategoryList = [{
+      id: crypto.randomUUID(),
+      name: '음료',
+      order: 0
+    }]
+    await saveCategories(defaultCategories)
+    return defaultCategories
   }
 }
 
