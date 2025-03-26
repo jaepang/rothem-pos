@@ -30,4 +30,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
     printOrder: (order: any) => 
       ipcRenderer.invoke('printer:printOrder', order),
   }
+})
+
+contextBridge.exposeInMainWorld('electron', {
+  ipcRenderer: {
+    send: (channel: string, data: any) => {
+      ipcRenderer.send(channel, data)
+    },
+    on: (channel: string, func: (...args: any[]) => void) => {
+      ipcRenderer.on(channel, (event, ...args) => func(...args))
+    },
+    once: (channel: string, func: (...args: any[]) => void) => {
+      ipcRenderer.once(channel, (event, ...args) => func(...args))
+    },
+    invoke: (channel: string, data: any) => {
+      return ipcRenderer.invoke(channel, data)
+    }
+  },
+  fs: {
+    readFile: (filePath: string) => ipcRenderer.invoke('fs:readFile', filePath),
+    writeFile: (filePath: string, content: string) => ipcRenderer.invoke('fs:writeFile', { filePath, content }),
+    ensureDir: (dirPath: string) => ipcRenderer.invoke('fs:ensureDir', dirPath)
+  }
 }) 
