@@ -4,6 +4,8 @@ export interface MenuItem {
   displayName?: string;
   category: string;
   price: number;
+  icePrice?: number;
+  hotPrice?: number;
   isSoldOut: boolean;
   isFavorite: boolean;
   imageUrl: string | null;

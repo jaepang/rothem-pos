@@ -112,6 +112,7 @@ export function MenuManagement() {
           ...menu,
           displayName: `${menu.name} (HOT)`,
           name: menu.name,
+          price: Number(menu.hotPrice || menu.price),
           isHot: true,
           isIce: false
         })
@@ -121,6 +122,7 @@ export function MenuManagement() {
           ...menu,
           displayName: `${menu.name} (ICE)`,
           name: menu.name,
+          price: Number(menu.icePrice || menu.price),
           isHot: false,
           isIce: true
         })

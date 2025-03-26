@@ -48,33 +48,35 @@ export function AddMenuModal({ isOpen, onClose, onAdd, categories }: AddMenuModa
     }
 
     if (formData.category === '음료') {
+      const baseMenuData = {
+        ...formData,
+        name: formData.name,
+        imageUrl: '',
+        icePrice: formData.isIce ? Number(formData.icePrice) : undefined,
+        hotPrice: formData.isHot ? Number(formData.hotPrice) : undefined
+      }
+
       if (formData.isIce && formData.isHot) {
         // ICE/HOT 모두 있는 경우
         onAdd({
-          ...formData,
-          name: formData.name,
+          ...baseMenuData,
           price: Number(formData.icePrice),
-          imageUrl: '',
           isIce: true,
           isHot: true
         })
       } else if (formData.isIce) {
         // ICE만 있는 경우
         onAdd({
-          ...formData,
-          name: formData.name,
+          ...baseMenuData,
           price: Number(formData.icePrice),
-          imageUrl: '',
           isIce: true,
           isHot: false
         })
       } else if (formData.isHot) {
         // HOT만 있는 경우
         onAdd({
-          ...formData,
-          name: formData.name,
+          ...baseMenuData,
           price: Number(formData.hotPrice),
-          imageUrl: '',
           isIce: false,
           isHot: true
         })
@@ -87,7 +89,9 @@ export function AddMenuModal({ isOpen, onClose, onAdd, categories }: AddMenuModa
         price: Number(formData.price),
         imageUrl: '',
         isIce: false,
-        isHot: false
+        isHot: false,
+        icePrice: undefined,
+        hotPrice: undefined
       })
     }
 
