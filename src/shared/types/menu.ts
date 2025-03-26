@@ -8,10 +8,12 @@ export interface MenuItem {
   imageUrl: string | null;
 }
 
-export interface MenuCategory {
+export type MenuList = MenuItem[];
+
+export interface Category {
   id: string;
   name: string;
+  order: number;
 }
 
-export type MenuList = MenuItem[];
-export type CategoryList = MenuCategory[]; 
+export type CategoryList = Category[]; 
