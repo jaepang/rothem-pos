@@ -65,10 +65,16 @@ const OrderManagement: React.FC = () => {
 
   const handleAddItem = (menu: MenuItem) => {
     setOrderItems(prev => {
-      const existingItem = prev.find(item => item.menuItem.id === menu.id)
+      const existingItem = prev.find(item => 
+        item.menuItem.id === menu.id && 
+        item.menuItem.isIce === menu.isIce && 
+        item.menuItem.isHot === menu.isHot
+      )
       if (existingItem) {
         return prev.map(item =>
-          item.menuItem.id === menu.id
+          item.menuItem.id === menu.id && 
+          item.menuItem.isIce === menu.isIce && 
+          item.menuItem.isHot === menu.isHot
             ? { ...item, quantity: item.quantity + 1 }
             : item
         )
@@ -77,13 +83,19 @@ const OrderManagement: React.FC = () => {
     })
   }
 
-  const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
+  const handleUpdateQuantity = (itemId: string, isIce: boolean | undefined, isHot: boolean | undefined, newQuantity: number) => {
     if (newQuantity < 0) return
     setOrderItems(prev =>
       newQuantity === 0
-        ? prev.filter(item => item.menuItem.id !== itemId)
+        ? prev.filter(item => 
+            !(item.menuItem.id === itemId && 
+              item.menuItem.isIce === isIce && 
+              item.menuItem.isHot === isHot)
+          )
         : prev.map(item =>
-            item.menuItem.id === itemId
+            item.menuItem.id === itemId && 
+            item.menuItem.isIce === isIce && 
+            item.menuItem.isHot === isHot
               ? { ...item, quantity: newQuantity }
               : item
           )
@@ -194,7 +206,12 @@ const OrderManagement: React.FC = () => {
                   <button
                     className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
                     onClick={() =>
-                      handleUpdateQuantity(item.menuItem.id, item.quantity - 1)
+                      handleUpdateQuantity(
+                        item.menuItem.id,
+                        item.menuItem.isIce,
+                        item.menuItem.isHot,
+                        item.quantity - 1
+                      )
                     }
                   >
                     -
@@ -203,7 +220,12 @@ const OrderManagement: React.FC = () => {
                   <button
                     className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
                     onClick={() =>
-                      handleUpdateQuantity(item.menuItem.id, item.quantity + 1)
+                      handleUpdateQuantity(
+                        item.menuItem.id,
+                        item.menuItem.isIce,
+                        item.menuItem.isHot,
+                        item.quantity + 1
+                      )
                     }
                   >
                     +
