@@ -1,22 +1,28 @@
 import { useState, useEffect, useRef } from 'react'
-import { MenuItem, MenuList } from '@/shared/types/menu'
+import { MenuItem, MenuList, CategoryList } from '@/shared/types/menu'
 import { loadMenuFromJson, saveMenuToJson, importMenuFromExcel, exportMenuToExcel, deleteMenuItem } from '@/shared/utils/menu'
 import { saveImage } from '@/shared/utils/image'
+import { loadCategories } from '@/shared/utils/category'
 import { AddMenuModal } from './AddMenuModal'
 
 export function MenuManagement() {
   const [menus, setMenus] = useState<MenuList>([])
+  const [categories, setCategories] = useState<CategoryList>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const excelInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    const loadMenus = async () => {
-      const loadedMenus = await loadMenuFromJson()
+    const loadData = async () => {
+      const [loadedMenus, loadedCategories] = await Promise.all([
+        loadMenuFromJson(),
+        loadCategories()
+      ])
       setMenus(loadedMenus)
+      setCategories(loadedCategories)
     }
-    loadMenus()
+    loadData()
   }, [])
 
   const handleAddMenu = (menuData: Omit<MenuItem, 'id'>) => {
@@ -93,7 +99,7 @@ export function MenuManagement() {
     saveMenuToJson(updatedMenus)
   }
 
-  const categories = ['all', ...new Set(menus.map((menu) => menu.category))]
+  const categoryNames = ['all', ...categories.map(category => category.name)]
   const filteredMenus = selectedCategory === 'all'
     ? menus
     : menus.filter((menu) => menu.category === selectedCategory)
@@ -132,7 +138,7 @@ export function MenuManagement() {
       </div>
 
       <div className="flex space-x-2 overflow-x-auto pb-2">
-        {categories.map((category) => (
+        {categoryNames.map((category) => (
           <button
             key={category}
             onClick={() => setSelectedCategory(category)}
@@ -219,7 +225,7 @@ export function MenuManagement() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddMenu}
-        categories={categories.filter(category => category !== 'all')}
+        categories={categories.map(category => category.name)}
       />
     </div>
   )
