@@ -1,6 +1,7 @@
 export interface MenuItem {
   id: string;
   name: string;
+  displayName?: string;
   category: string;
   price: number;
   isSoldOut: boolean;

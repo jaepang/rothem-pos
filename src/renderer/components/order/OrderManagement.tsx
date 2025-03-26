@@ -32,6 +32,35 @@ const OrderManagement: React.FC = () => {
     ? menus
     : menus.filter(menu => menu.category === selectedCategory)
 
+  const displayMenus = filteredMenus.map(menu => {
+    if (menu.category === '음료') {
+      const variants = []
+      if (menu.isHot) {
+        variants.push({
+          ...menu,
+          displayName: `${menu.name} (HOT)`,
+          name: menu.name,
+          isHot: true,
+          isIce: false
+        })
+      }
+      if (menu.isIce) {
+        variants.push({
+          ...menu,
+          displayName: `${menu.name} (ICE)`,
+          name: menu.name,
+          isHot: false,
+          isIce: true
+        })
+      }
+      return variants
+    }
+    return [{
+      ...menu,
+      displayName: menu.name
+    }]
+  }).flat()
+
   const handleAddItem = (menu: MenuItem) => {
     setOrderItems(prev => {
       const existingItem = prev.find(item => item.menuItem.id === menu.id)
@@ -119,13 +148,13 @@ const OrderManagement: React.FC = () => {
         <div>
           <h3 className="text-xl font-bold mb-2">메뉴</h3>
           <div className="grid grid-cols-2 gap-2">
-            {filteredMenus.map(menu => (
+            {displayMenus.map(menu => (
               <button
                 key={menu.id}
                 className="p-2 bg-white border rounded shadow"
                 onClick={() => handleAddItem(menu)}
               >
-                <div className="font-bold">{menu.name}</div>
+                <div className="font-bold">{menu.displayName}</div>
                 <div className="text-gray-600">{menu.price.toLocaleString()}원</div>
               </button>
             ))}
@@ -154,7 +183,7 @@ const OrderManagement: React.FC = () => {
                 className="flex items-center justify-between p-2 bg-white border rounded"
               >
                 <div>
-                  <div className="font-bold">{item.menuItem.name}</div>
+                  <div className="font-bold">{item.menuItem.displayName}</div>
                   <div className="text-gray-600">
                     {(item.menuItem.price * item.quantity).toLocaleString()}원
                   </div>

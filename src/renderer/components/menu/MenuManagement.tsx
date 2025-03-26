@@ -104,6 +104,35 @@ export function MenuManagement() {
     ? menus
     : menus.filter((menu) => menu.category === selectedCategory)
 
+  const displayMenus = filteredMenus.map(menu => {
+    if (menu.category === '음료') {
+      const variants = []
+      if (menu.isHot) {
+        variants.push({
+          ...menu,
+          displayName: `${menu.name} (HOT)`,
+          name: menu.name,
+          isHot: true,
+          isIce: false
+        })
+      }
+      if (menu.isIce) {
+        variants.push({
+          ...menu,
+          displayName: `${menu.name} (ICE)`,
+          name: menu.name,
+          isHot: false,
+          isIce: true
+        })
+      }
+      return variants
+    }
+    return [{
+      ...menu,
+      displayName: menu.name
+    }]
+  }).flat()
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -154,7 +183,7 @@ export function MenuManagement() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {filteredMenus.map((menu) => (
+        {displayMenus.map((menu) => (
           <div
             key={menu.id}
             className="p-4 border rounded-lg space-y-2 hover:shadow-md transition-shadow"
@@ -189,7 +218,7 @@ export function MenuManagement() {
               </div>
             </div>
             <div className="flex justify-between items-start">
-              <h3 className="font-semibold">{menu.name}</h3>
+              <h3 className="font-semibold">{menu.displayName}</h3>
               <button
                 onClick={() => handleToggleFavorite(menu.id)}
                 className={`text-xl ${menu.isFavorite ? 'text-yellow-500' : 'text-gray-300'}`}
@@ -199,13 +228,6 @@ export function MenuManagement() {
             </div>
             <p className="text-sm text-muted-foreground">
               {menu.category}
-              {menu.category === '음료' && (
-                <span className="ml-2">
-                  {menu.isIce && 'ICE'}
-                  {menu.isIce && menu.isHot && ' / '}
-                  {menu.isHot && 'HOT'}
-                </span>
-              )}
             </p>
             <p className="font-medium">{menu.price.toLocaleString()}원</p>
             <div className="flex space-x-2">
