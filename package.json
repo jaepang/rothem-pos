@@ -1,8 +1,9 @@
 {
-  "name": "rodem-pos",
+  "name": "rothem-pos",
   "private": true,
   "version": "0.0.1",
   "main": "dist-electron/main.js",
+  "productName": "Rothem POS",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && electron-builder",
@@ -12,7 +13,6 @@
   },
   "build": {
     "appId": "com.rodem.pos",
-    "productName": "Rodem POS",
     "directories": {
       "output": "release"
     },
