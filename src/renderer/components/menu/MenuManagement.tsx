@@ -3,14 +3,14 @@ import { MenuItem, MenuList, CategoryList } from '@/shared/types/menu'
 import { loadMenuFromJson, saveMenuToJson, importMenuFromExcel, exportMenuToExcel, deleteMenuItem } from '@/shared/utils/menu'
 import { saveImage } from '@/shared/utils/image'
 import { loadCategories } from '@/shared/utils/category'
-import { AddMenuModal } from './AddMenuModal'
+import { MenuFormModal } from './MenuFormModal'
 
 export function MenuManagement() {
   const [menus, setMenus] = useState<MenuList>([])
   const [categories, setCategories] = useState<CategoryList>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const imageInputRef = useRef<HTMLInputElement>(null)
+  const [selectedMenu, setSelectedMenu] = useState<MenuItem | undefined>(undefined)
   const excelInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -24,16 +24,6 @@ export function MenuManagement() {
     }
     loadData()
   }, [])
-
-  const handleAddMenu = (menuData: Omit<MenuItem, 'id'>) => {
-    const newMenu: MenuItem = {
-      ...menuData,
-      id: crypto.randomUUID()
-    }
-    const updatedMenus = [...menus, newMenu]
-    setMenus(updatedMenus)
-    saveMenuToJson(updatedMenus)
-  }
 
   const handleExportMenus = () => {
     if (menus.length === 0) {
@@ -93,10 +83,37 @@ export function MenuManagement() {
     }
   }
 
-  const handleDeleteMenu = (menu: MenuItem) => {
-    const updatedMenus = deleteMenuItem(menu, menus)
-    setMenus(updatedMenus)
-    saveMenuToJson(updatedMenus)
+  const handleSubmitMenu = (menuData: Omit<MenuItem, 'id'>) => {
+    if (selectedMenu) {
+      // 메뉴 수정
+      const updatedMenus = menus.map(menu =>
+        menu.id === selectedMenu.id
+          ? { ...menuData, id: menu.id }
+          : menu
+      )
+      setMenus(updatedMenus)
+      saveMenuToJson(updatedMenus)
+    } else {
+      // 새 메뉴 추가
+      const newMenu = {
+        ...menuData,
+        id: Date.now().toString()
+      }
+      const updatedMenus = [...menus, newMenu]
+      setMenus(updatedMenus)
+      saveMenuToJson(updatedMenus)
+    }
+    setIsAddModalOpen(false)
+    setSelectedMenu(undefined)
+  }
+
+  const handleEditMenu = (menu: MenuItem) => {
+    // displayMenus에서 변형된 메뉴가 아닌 원본 메뉴를 찾아서 사용
+    const originalMenu = menus.find(m => m.id === menu.id)
+    if (originalMenu) {
+      setSelectedMenu(originalMenu)
+      setIsAddModalOpen(true)
+    }
   }
 
   const categoryNames = ['all', ...categories.map(category => category.name)]
@@ -141,7 +158,10 @@ export function MenuManagement() {
         <h2 className="text-3xl font-bold">메뉴 관리</h2>
         <div className="space-x-2">
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => {
+              setSelectedMenu(undefined)
+              setIsAddModalOpen(true)
+            }}
             className="px-4 py-2 text-sm text-white bg-primary rounded hover:bg-primary/90"
           >
             메뉴 추가
@@ -188,7 +208,8 @@ export function MenuManagement() {
         {displayMenus.map((menu) => (
           <div
             key={menu.id}
-            className="p-4 border rounded-lg space-y-2 hover:shadow-md transition-shadow"
+            className="p-4 border rounded-lg space-y-2 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => handleEditMenu(menu)}
           >
             <div className="relative aspect-square mb-2 bg-gray-100 rounded-md overflow-hidden group">
               {menu.imageUrl ? (
@@ -209,11 +230,12 @@ export function MenuManagement() {
                   onChange={(e) => handleImageUpload(e, menu.id)}
                   className="hidden"
                   id={`image-upload-${menu.id}`}
-                  ref={imageInputRef}
+                  onClick={(e) => e.stopPropagation()}
                 />
                 <label
                   htmlFor={`image-upload-${menu.id}`}
                   className="px-3 py-1 bg-white text-black rounded cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   이미지 변경
                 </label>
@@ -222,7 +244,10 @@ export function MenuManagement() {
             <div className="flex justify-between items-start">
               <h3 className="font-semibold">{menu.displayName}</h3>
               <button
-                onClick={() => handleToggleFavorite(menu.id)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleToggleFavorite(menu.id)
+                }}
                 className={`text-xl ${menu.isFavorite ? 'text-yellow-500' : 'text-gray-300'}`}
               >
                 ★
@@ -234,17 +259,27 @@ export function MenuManagement() {
             <p className="font-medium">{menu.price.toLocaleString()}원</p>
             <div className="flex space-x-2">
               <button
-                onClick={() => handleToggleSoldOut(menu.id)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleToggleSoldOut(menu.id)
+                }}
                 className={`flex-1 px-3 py-1 rounded ${
                   menu.isSoldOut
                     ? 'bg-destructive text-destructive-foreground'
-                    : 'bg-primary text-primary-foreground'
+                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
                 }`}
               >
                 {menu.isSoldOut ? '품절' : '판매중'}
               </button>
               <button
-                onClick={() => handleDeleteMenu(menu)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (confirm('이 메뉴를 삭제하시겠습니까?')) {
+                    const updatedMenus = deleteMenuItem(menu, menus)
+                    setMenus(updatedMenus)
+                    saveMenuToJson(updatedMenus)
+                  }
+                }}
                 className="px-3 py-1 bg-destructive text-destructive-foreground rounded hover:bg-destructive/90"
               >
                 삭제
@@ -254,11 +289,15 @@ export function MenuManagement() {
         ))}
       </div>
 
-      <AddMenuModal
+      <MenuFormModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddMenu}
+        onClose={() => {
+          setIsAddModalOpen(false)
+          setSelectedMenu(undefined)
+        }}
+        onSubmit={handleSubmitMenu}
         categories={categories.map(category => category.name)}
+        initialData={selectedMenu}
       />
     </div>
   )
