@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { MenuItem } from '@/shared/types/menu'
 
 interface AddMenuModalProps {
@@ -42,7 +43,7 @@ export function AddMenuModal({ isOpen, onClose, onAdd, categories }: AddMenuModa
 
   if (!isOpen) return null
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-background p-6 rounded-lg w-full max-w-md">
         <h3 className="text-xl font-bold mb-4">새 메뉴 추가</h3>
@@ -120,6 +121,7 @@ export function AddMenuModal({ isOpen, onClose, onAdd, categories }: AddMenuModa
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 } 
