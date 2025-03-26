@@ -2,17 +2,32 @@ import { useState, useEffect, useRef } from 'react'
 import { MenuItem, MenuList } from '@/shared/types/menu'
 import { loadMenuFromJson, saveMenuToJson, importMenuFromExcel, exportMenuToExcel, deleteMenuItem } from '@/shared/utils/menu'
 import { saveImage } from '@/shared/utils/image'
+import { AddMenuModal } from './AddMenuModal'
 
 export function MenuManagement() {
   const [menus, setMenus] = useState<MenuList>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const excelInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    const loadedMenus = loadMenuFromJson()
-    setMenus(loadedMenus)
+    const loadMenus = async () => {
+      const loadedMenus = await loadMenuFromJson()
+      setMenus(loadedMenus)
+    }
+    loadMenus()
   }, [])
+
+  const handleAddMenu = (menuData: Omit<MenuItem, 'id'>) => {
+    const newMenu: MenuItem = {
+      ...menuData,
+      id: crypto.randomUUID()
+    }
+    const updatedMenus = [...menus, newMenu]
+    setMenus(updatedMenus)
+    saveMenuToJson(updatedMenus)
+  }
 
   const handleExportMenus = () => {
     if (menus.length === 0) {
@@ -88,6 +103,12 @@ export function MenuManagement() {
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold">메뉴 관리</h2>
         <div className="space-x-2">
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="px-4 py-2 text-sm text-white bg-primary rounded hover:bg-primary/90"
+          >
+            메뉴 추가
+          </button>
           <button
             onClick={handleExportMenus}
             className="px-4 py-2 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
@@ -193,6 +214,13 @@ export function MenuManagement() {
           </div>
         ))}
       </div>
+
+      <AddMenuModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAdd={handleAddMenu}
+        categories={categories.filter(category => category !== 'all')}
+      />
     </div>
   )
 } 
