@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { MenuItem, MenuList, CategoryList } from '@/shared/types/menu'
 import { loadMenuFromJson, saveMenuToJson, importMenuFromExcel, exportMenuToExcel, deleteMenuItem } from '@/shared/utils/menu'
-import { saveImage } from '@/shared/utils/image'
 import { loadCategories } from '@/shared/utils/category'
 import { MenuFormModal } from './MenuFormModal'
 
@@ -59,30 +58,6 @@ export function MenuManagement() {
     saveMenuToJson(updatedMenus)
   }
 
-  const handleToggleFavorite = (menuId: string) => {
-    const updatedMenus = menus.map((menu) =>
-      menu.id === menuId ? { ...menu, isFavorite: !menu.isFavorite } : menu
-    )
-    setMenus(updatedMenus)
-    saveMenuToJson(updatedMenus)
-  }
-
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, menuId: string) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    try {
-      const imageUrl = await saveImage(file, menuId)
-      const updatedMenus = menus.map((menu) =>
-        menu.id === menuId ? { ...menu, imageUrl } : menu
-      )
-      setMenus(updatedMenus)
-      saveMenuToJson(updatedMenus)
-    } catch (error) {
-      console.error('이미지 업로드 실패:', error)
-    }
-  }
-
   const handleSubmitMenu = (menuData: Omit<MenuItem, 'id'>) => {
     if (selectedMenu) {
       // 메뉴 수정
@@ -123,32 +98,17 @@ export function MenuManagement() {
 
   const displayMenus = filteredMenus.map(menu => {
     if (menu.category === '음료') {
-      const variants = []
-      if (menu.isHot) {
-        variants.push({
-          ...menu,
-          displayName: `${menu.name} (HOT)`,
-          name: menu.name,
-          price: Number(menu.hotPrice || menu.price),
-          isHot: true,
-          isIce: false
-        })
-      }
-      if (menu.isIce) {
-        variants.push({
-          ...menu,
-          displayName: `${menu.name} (ICE)`,
-          name: menu.name,
-          price: Number(menu.icePrice || menu.price),
-          isHot: false,
-          isIce: true
-        })
-      }
-      return variants
+      return [{
+        ...menu,
+        displayName: menu.name,
+        price: Number(menu.icePrice || menu.price),
+        priceInfo: `${menu.isIce ? `ICE ${menu.icePrice?.toLocaleString()}원` : ''}${menu.isIce && menu.isHot ? ' / ' : ''}${menu.isHot ? `HOT ${menu.hotPrice?.toLocaleString()}원` : ''}`
+      }]
     }
     return [{
       ...menu,
-      displayName: menu.name
+      displayName: menu.name,
+      priceInfo: `${menu.price.toLocaleString()}원`
     }]
   }).flat()
 
@@ -211,62 +171,23 @@ export function MenuManagement() {
             className="p-4 border rounded-lg space-y-2 hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => handleEditMenu(menu)}
           >
-            <div className="relative aspect-square mb-2 bg-gray-100 rounded-md overflow-hidden group">
-              {menu.imageUrl ? (
-                <img
-                  src={menu.imageUrl}
-                  alt={menu.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400">
-                  이미지 없음
-                </div>
-              )}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload(e, menu.id)}
-                  className="hidden"
-                  id={`image-upload-${menu.id}`}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <label
-                  htmlFor={`image-upload-${menu.id}`}
-                  className="px-3 py-1 bg-white text-black rounded cursor-pointer"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  이미지 변경
-                </label>
-              </div>
-            </div>
-            <div className="flex justify-between items-start">
+            <div>
               <h3 className="font-semibold">{menu.displayName}</h3>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleToggleFavorite(menu.id)
-                }}
-                className={`text-xl ${menu.isFavorite ? 'text-yellow-500' : 'text-gray-300'}`}
-              >
-                ★
-              </button>
             </div>
             <p className="text-sm text-muted-foreground">
               {menu.category}
             </p>
-            <p className="font-medium">{menu.price.toLocaleString()}원</p>
+            <p className="font-medium">{menu.priceInfo}</p>
             <div className="flex space-x-2">
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   handleToggleSoldOut(menu.id)
                 }}
-                className={`flex-1 px-3 py-1 rounded ${
+                className={`flex-1 px-3 py-1 rounded transition-colors hover:opacity-90 ${
                   menu.isSoldOut
                     ? 'bg-destructive text-destructive-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
+                    : 'bg-green-500 text-white hover:bg-green-600'
                 }`}
               >
                 {menu.isSoldOut ? '품절' : '판매중'}
@@ -280,7 +201,7 @@ export function MenuManagement() {
                     saveMenuToJson(updatedMenus)
                   }
                 }}
-                className="px-3 py-1 bg-destructive text-destructive-foreground rounded hover:bg-destructive/90"
+                className="px-3 py-1 border border-destructive text-destructive rounded hover:bg-destructive/10 transition-colors"
               >
                 삭제
               </button>

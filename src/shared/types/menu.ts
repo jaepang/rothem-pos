@@ -7,8 +7,6 @@ export interface MenuItem {
   icePrice?: number;
   hotPrice?: number;
   isSoldOut: boolean;
-  isFavorite: boolean;
-  imageUrl: string | null;
   isIce?: boolean;
   isHot?: boolean;
 }

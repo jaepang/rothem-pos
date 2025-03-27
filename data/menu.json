@@ -18,10 +18,8 @@
     "icePrice": 5000,
     "category": "음료",
     "isSoldOut": false,
-    "isFavorite": false,
     "isIce": true,
     "isHot": false,
-    "imageUrl": "",
     "id": "1743053951598"
   },
   {

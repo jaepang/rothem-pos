@@ -18,7 +18,6 @@ export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialDa
     hotPrice: '',
     category: '음료',
     isSoldOut: false,
-    isFavorite: false,
     isIce: false,
     isHot: false
   })
@@ -32,7 +31,6 @@ export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialDa
         hotPrice: initialData.hotPrice?.toString() || '',
         category: initialData.category,
         isSoldOut: initialData.isSoldOut,
-        isFavorite: initialData.isFavorite,
         isIce: initialData.isIce ?? false,
         isHot: initialData.isHot ?? false
       })
@@ -44,7 +42,6 @@ export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialDa
         hotPrice: '',
         category: '음료',
         isSoldOut: false,
-        isFavorite: false,
         isIce: false,
         isHot: false
       })
@@ -71,7 +68,6 @@ export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialDa
     const baseMenuData = {
       ...formData,
       name: formData.name,
-      imageUrl: initialData?.imageUrl || '',
     }
 
     if (formData.category === '음료') {
@@ -124,7 +120,14 @@ export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialDa
   if (!isOpen) return null
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose()
+        }
+      }}
+    >
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6">{initialData ? '메뉴 수정' : '메뉴 추가'}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -206,25 +209,27 @@ export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialDa
             </div>
           )}
 
-          <div className="flex items-center space-x-4">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={formData.isSoldOut}
-                onChange={(e) => setFormData({ ...formData, isSoldOut: e.target.checked })}
-                className="rounded"
-              />
-              <span className="text-sm">품절</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={formData.isFavorite}
-                onChange={(e) => setFormData({ ...formData, isFavorite: e.target.checked })}
-                className="rounded"
-              />
-              <span className="text-sm">즐겨찾기</span>
-            </label>
+          <div className="space-y-2">
+            <div>
+              <span className="block text-sm font-medium">품절</span>
+            </div>
+            <div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={formData.isSoldOut}
+                onClick={() => setFormData({ ...formData, isSoldOut: !formData.isSoldOut })}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  formData.isSoldOut ? 'bg-destructive' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    formData.isSoldOut ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
 
           <div className="flex justify-end space-x-2 mt-6">
