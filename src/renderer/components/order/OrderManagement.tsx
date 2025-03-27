@@ -223,8 +223,9 @@ const OrderManagement: React.FC = () => {
                 ))}
               </div>
 
-              <div className="mt-6 bg-gray-50 p-6 rounded-lg">
-                <div className="mb-6">
+              <div className="mt-4 bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-xl font-bold mb-3">주문 내역</h3>
+                <div className="mb-4">
                   <h4 className="text-lg font-medium text-gray-900 mb-2">
                     메모
                   </h4>
@@ -236,51 +237,53 @@ const OrderManagement: React.FC = () => {
                   />
                 </div>
 
-                <div className="space-y-3 mb-6 max-h-[300px] overflow-y-auto">
-                  {orderItems.map(item => (
-                    <div
-                      key={`${item.menuItem.id}-${item.menuItem.isHot}-${item.menuItem.isIce}`}
-                      className="flex items-center justify-between p-3 bg-white border rounded-lg"
-                    >
-                      <div className="font-medium flex-1">
-                        {item.menuItem.displayName}
+                {orderItems.length > 0 && (
+                  <div className="space-y-2 mb-4 max-h-[300px] overflow-y-auto">
+                    {orderItems.map(item => (
+                      <div
+                        key={`${item.menuItem.id}-${item.menuItem.isHot}-${item.menuItem.isIce}`}
+                        className="flex items-center justify-between p-3 bg-white border rounded-lg"
+                      >
+                        <div className="font-medium flex-1">
+                          {item.menuItem.displayName}
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-gray-600">{item.menuItem.price.toLocaleString()}원</span>
+                          <button
+                            className="w-7 h-7 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
+                            onClick={() =>
+                              handleUpdateQuantity(
+                                item.menuItem.id,
+                                item.menuItem.isIce,
+                                item.menuItem.isHot,
+                                item.quantity - 1
+                              )
+                            }
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center font-medium">{item.quantity}</span>
+                          <button
+                            className="w-7 h-7 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
+                            onClick={() =>
+                              handleUpdateQuantity(
+                                item.menuItem.id,
+                                item.menuItem.isIce,
+                                item.menuItem.isHot,
+                                item.quantity + 1
+                              )
+                            }
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-gray-600">{item.menuItem.price.toLocaleString()}원</span>
-                        <button
-                          className="w-7 h-7 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
-                          onClick={() =>
-                            handleUpdateQuantity(
-                              item.menuItem.id,
-                              item.menuItem.isIce,
-                              item.menuItem.isHot,
-                              item.quantity - 1
-                            )
-                          }
-                        >
-                          -
-                        </button>
-                        <span className="w-8 text-center font-medium">{item.quantity}</span>
-                        <button
-                          className="w-7 h-7 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
-                          onClick={() =>
-                            handleUpdateQuantity(
-                              item.menuItem.id,
-                              item.menuItem.isIce,
-                              item.menuItem.isHot,
-                              item.quantity + 1
-                            )
-                          }
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
 
-                <div>
-                  <div className="text-xl font-bold mb-4">
+                <div className="pt-3">
+                  <div className="text-xl font-bold mb-3">
                     합계: {orderItems
                       .reduce(
                         (sum, item) => sum + item.menuItem.price * item.quantity,
