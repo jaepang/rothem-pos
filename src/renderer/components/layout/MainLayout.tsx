@@ -15,7 +15,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, activeTab, onTabChang
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
-        <div className="container flex h-16 items-center justify-between px-4">
+        <div className="container flex h-[6vh] items-center justify-between px-4">
           <h1 className="text-2xl font-bold flex items-center">
             Rothem POS
             <img 
