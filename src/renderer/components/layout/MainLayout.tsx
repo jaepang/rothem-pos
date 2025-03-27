@@ -59,7 +59,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, activeTab, onTabChang
           </div>
         </div>
       </header>
-      <main className="container py-6">{children}</main>
+      <main className="container">{children}</main>
     </div>
   )
 }

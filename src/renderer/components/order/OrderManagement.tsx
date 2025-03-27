@@ -182,7 +182,7 @@ const OrderManagement: React.FC = () => {
   }
 
   return (
-    <div className="h-[calc(94vh-3.1rem)] grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
+    <div className="h-[calc(94vh-0.1rem)] grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
       <div className={`${showCompletedOrders ? 'lg:col-span-4' : 'lg:col-span-8'} transition-all duration-300 overflow-hidden`}>
         <div className="h-full overflow-y-auto px-6">
           <div className="space-y-6 pb-6">
@@ -206,7 +206,6 @@ const OrderManagement: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="text-xl font-bold mb-4">메뉴</h3>
               <div className={`grid ${
                 showCompletedOrders 
                   ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3' 
@@ -225,7 +224,6 @@ const OrderManagement: React.FC = () => {
               </div>
 
               <div className="mt-6 bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-xl font-bold mb-4">주문 내역</h3>
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     메모
