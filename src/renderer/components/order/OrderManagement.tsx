@@ -225,9 +225,9 @@ const OrderManagement: React.FC = () => {
 
               <div className="mt-6 bg-gray-50 p-6 rounded-lg">
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">
                     메모
-                  </label>
+                  </h4>
                   <textarea
                     className="w-full px-3 py-1.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={memo}
@@ -279,7 +279,7 @@ const OrderManagement: React.FC = () => {
                   ))}
                 </div>
 
-                <div className="border-t pt-4">
+                <div>
                   <div className="text-xl font-bold mb-4">
                     합계: {orderItems
                       .reduce(
