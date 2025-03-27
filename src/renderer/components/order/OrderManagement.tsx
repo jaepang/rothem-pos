@@ -163,22 +163,21 @@ const OrderManagement: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold">주문 관리</h2>
-      </div>
-
-      <div className="flex space-x-2 overflow-x-auto pb-2">
-        {categories.map(category => (
-          <button
-            key={category}
-            className={`px-4 py-2 rounded-md whitespace-nowrap ${
-              selectedCategory === category
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
-            }`}
-            onClick={() => setSelectedCategory(category)}
-          >
-            {category}
-          </button>
-        ))}
+        <div className="flex space-x-2">
+          {categories.map(category => (
+            <button
+              key={category}
+              className={`px-3 py-1.5 text-sm rounded-md whitespace-nowrap ${
+                selectedCategory === category
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
+              }`}
+              onClick={() => setSelectedCategory(category)}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
