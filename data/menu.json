@@ -1,1 +1,72 @@
-[]
+[
+  {
+    "name": "아메리카노",
+    "price": 2500,
+    "icePrice": 2500,
+    "hotPrice": 2000,
+    "category": "음료",
+    "isSoldOut": false,
+    "isFavorite": false,
+    "isIce": true,
+    "isHot": true,
+    "imageUrl": "",
+    "id": "1743053489723"
+  },
+  {
+    "name": "자몽에이드",
+    "price": 5000,
+    "icePrice": 5000,
+    "category": "음료",
+    "isSoldOut": false,
+    "isFavorite": false,
+    "isIce": true,
+    "isHot": false,
+    "imageUrl": "",
+    "id": "1743053951598"
+  },
+  {
+    "name": "치즈케이크",
+    "price": 6000,
+    "category": "케이크",
+    "isSoldOut": false,
+    "isFavorite": false,
+    "isIce": false,
+    "isHot": false,
+    "imageUrl": "",
+    "id": "1743053983791"
+  },
+  {
+    "name": "생크림케이크",
+    "price": 8000,
+    "category": "케이크",
+    "isSoldOut": false,
+    "isFavorite": false,
+    "isIce": false,
+    "isHot": false,
+    "imageUrl": "",
+    "id": "1743053995859"
+  },
+  {
+    "name": "오렌지주스",
+    "price": 3000,
+    "icePrice": 3000,
+    "category": "음료",
+    "isSoldOut": false,
+    "isFavorite": false,
+    "isIce": true,
+    "isHot": false,
+    "imageUrl": "",
+    "id": "1743054016635"
+  },
+  {
+    "name": "찬원이의 원픽",
+    "price": 2500,
+    "category": "아이스크림",
+    "isSoldOut": false,
+    "isFavorite": false,
+    "isIce": false,
+    "isHot": false,
+    "imageUrl": "",
+    "id": "1743054055570"
+  }
+]
