@@ -13,6 +13,35 @@ interface ExcelOrder {
   메모: string;
 }
 
+const ORDERS_STORAGE_KEY = 'pos_orders'
+
+export const saveOrder = (order: Order): void => {
+  const orders = getOrders()
+  orders.push(order)
+  localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders))
+}
+
+export const getOrders = (): OrderList => {
+  const ordersJson = localStorage.getItem(ORDERS_STORAGE_KEY)
+  return ordersJson ? JSON.parse(ordersJson) : []
+}
+
+export const updateOrderStatus = (orderId: string, status: 'pending' | 'completed'): void => {
+  const orders = getOrders()
+  const updatedOrders = orders.map(order => 
+    order.id === orderId ? { ...order, status } : order
+  )
+  localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updatedOrders))
+}
+
+export const updateOrderPrintStatus = (orderId: string, printed: boolean): void => {
+  const orders = getOrders()
+  const updatedOrders = orders.map(order => 
+    order.id === orderId ? { ...order, printed } : order
+  )
+  localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updatedOrders))
+}
+
 export const exportOrdersToExcel = (orders: OrderList): void => {
   const excelData: ExcelOrder[] = []
 

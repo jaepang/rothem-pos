@@ -11,6 +11,8 @@ export interface Order {
   totalAmount: number;
   orderDate: string;
   memo?: string;
+  status: 'pending' | 'completed';
+  printed: boolean;
 }
 
 export type OrderList = Order[];
