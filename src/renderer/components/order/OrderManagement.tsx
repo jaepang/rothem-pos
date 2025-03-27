@@ -161,9 +161,9 @@ const OrderManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">주문 관리</h2>
-        <div className="flex space-x-2">
+      <div className="flex items-center gap-6">
+        <h2 className="text-3xl font-bold shrink-0">주문 관리</h2>
+        <div className="flex space-x-2 overflow-x-auto">
           {categories.map(category => (
             <button
               key={category}
