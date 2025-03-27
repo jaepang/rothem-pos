@@ -165,7 +165,7 @@ const OrderManagement: React.FC = () => {
     setOrders(prevOrders =>
       prevOrders.map(order =>
         order.id === orderId
-          ? { ...order, status: 'completed' }
+          ? { ...order, status: 'completed', completedAt: new Date().toISOString() }
           : order
       )
     )
@@ -178,6 +178,12 @@ const OrderManagement: React.FC = () => {
           ? { ...order, status: 'cancelled' }
           : order
       )
+    )
+  }
+
+  const handleDeleteOrder = (orderId: string) => {
+    setOrders(prevOrders =>
+      prevOrders.filter(order => order.id !== orderId)
     )
   }
 
@@ -351,16 +357,20 @@ const OrderManagement: React.FC = () => {
             </div>
             <div className="space-y-2 pb-6">
               {orders
-                .filter(order => order.status === 'completed')
+                .filter(order => order.status === 'completed' || order.status === 'cancelled')
+                .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
                 .map(order => (
                   <PendingOrderCard
                     key={order.id}
                     order={order}
                     onComplete={handleCompleteOrder}
                     onCancel={handleCancelOrder}
+                    onDelete={order.status === 'cancelled' ? handleDeleteOrder : undefined}
                   />
                 ))}
-              {orders.filter(order => order.status === 'completed').length === 0 && (
+              {orders.filter(order => 
+                order.status === 'completed' || order.status === 'cancelled'
+              ).length === 0 && (
                 <div className="text-center py-4 text-gray-500">
                   완료된 주문이 없습니다
                 </div>

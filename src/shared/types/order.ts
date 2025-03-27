@@ -10,6 +10,7 @@ export interface Order {
   items: OrderItem[];
   totalAmount: number;
   orderDate: string;
+  completedAt?: string;
   memo?: string;
   status: 'pending' | 'completed' | 'cancelled';
   printed: boolean;

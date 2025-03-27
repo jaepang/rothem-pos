@@ -5,72 +5,116 @@ interface PendingOrderCardProps {
   order: Order
   onComplete: (orderId: string) => void
   onCancel: (orderId: string) => void
+  onDelete?: (orderId: string) => void
 }
 
-const PendingOrderCard: React.FC<PendingOrderCardProps> = ({
+export const PendingOrderCard: React.FC<PendingOrderCardProps> = ({
   order,
   onComplete,
-  onCancel
+  onCancel,
+  onDelete
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
 
-  const isCompleted = order.status === 'completed'
+  const getStatusLabel = () => {
+    switch (order.status) {
+      case 'completed':
+        return <span className="text-green-600 font-medium">완료</span>
+      case 'cancelled':
+        return <span className="text-red-600 font-medium">취소</span>
+      default:
+        return <span className="text-blue-600 font-medium">처리중</span>
+    }
+  }
+
+  const getTimeDisplay = () => {
+    const orderTime = new Date(order.orderDate).toLocaleString('ko-KR', {
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false
+    })
+
+    if (order.status === 'completed' && order.completedAt) {
+      const completedTime = new Date(order.completedAt).toLocaleString('ko-KR', {
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false
+      })
+      return `${orderTime}~${completedTime}`
+    }
+
+    return new Date(order.orderDate).toLocaleString('ko-KR', {
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false
+    })
+  }
 
   return (
-    <div className="p-4 rounded-lg border">
-      <div className="space-y-3">
-        <div className="flex justify-between items-start">
-          <div className="flex items-center gap-2">
-            <span className={`text-sm px-2 py-0.5 rounded ${
-              isCompleted ? 'bg-green-100 text-green-800' : 'bg-yellow-100'
-            }`}>
-              {isCompleted ? '완료' : '처리중'}
-            </span>
-            <span className="text-sm text-gray-600">
-              {new Date(order.orderDate).toLocaleString()}
-            </span>
-          </div>
-          <span className="font-medium">
-            {order.totalAmount.toLocaleString()}원
+    <div className="bg-white border rounded-lg p-4">
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-gray-600">
+            {getTimeDisplay()}
           </span>
+          {getStatusLabel()}
         </div>
-        <div className="space-y-1.5">
-          {order.items.map((item, idx) => (
-            <div key={`${order.id}-${idx}`} className="text-sm flex justify-between gap-4">
-              <span className="truncate">{item.menuItem.displayName} × {item.quantity}</span>
-              <span className="text-gray-600 shrink-0">{(item.menuItem.price * item.quantity).toLocaleString()}원</span>
+        <div className="text-lg font-bold">
+          {order.totalAmount.toLocaleString()}원
+        </div>
+      </div>
+
+      <div className="space-y-1 mb-3">
+        {order.items.map(item => (
+          <div
+            key={`${item.menuItem.id}-${item.menuItem.isHot}-${item.menuItem.isIce}`}
+            className="flex justify-between text-sm"
+          >
+            <div className="flex gap-1">
+              <span>{item.menuItem.displayName}</span>
+              <span className="text-gray-600">× {item.quantity}</span>
             </div>
-          ))}
-        </div>
-        <div className="flex items-top justify-between gap-3">
-          <div className={`text-sm text-gray-600 cursor-pointer flex-1 ${
-            isExpanded ? '' : 'truncate'
-          }`}
+            <span className="text-gray-600">{(item.menuItem.price * item.quantity).toLocaleString()}원</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-top justify-between gap-3">
+        <div 
+          className={`text-sm text-gray-600 cursor-pointer flex-1 ${isExpanded ? '' : 'truncate'}`}
           onClick={() => setIsExpanded(!isExpanded)}
           title={isExpanded ? '접기' : '펼치기'}
-          >
-            {order.memo ? `메모: ${order.memo}` : ''}
-          </div>
-          {!isCompleted && (
-            <div className="flex gap-2 shrink-0">
+        >
+          {order.memo ? `메모: ${order.memo}` : ''}
+        </div>
+        <div className="flex gap-2 shrink-0">
+          {order.status === 'pending' ? (
+            <>
               <button
-                className="h-8 px-3 rounded bg-green-500 text-white hover:bg-green-600 text-sm font-medium"
                 onClick={() => onComplete(order.id)}
+                className="h-8 px-3 rounded bg-green-500 text-white hover:bg-green-600 text-sm font-medium"
               >
                 완료
               </button>
               <button
-                className="h-8 px-3 rounded bg-red-500 text-white hover:bg-red-600 text-sm font-medium"
                 onClick={() => onCancel(order.id)}
+                className="h-8 px-3 rounded bg-red-500 text-white hover:bg-red-600 text-sm font-medium"
               >
                 취소
               </button>
-            </div>
+            </>
+          ) : order.status === 'cancelled' && onDelete && (
+            <button
+              onClick={() => onDelete(order.id)}
+              className="h-8 px-3 rounded bg-red-100 text-red-600 hover:bg-red-200 text-sm font-medium"
+            >
+              지우기
+            </button>
           )}
         </div>
       </div>
     </div>
   )
-}
-
-export { PendingOrderCard } 
+} 
