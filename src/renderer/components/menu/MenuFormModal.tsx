@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { MenuItem } from '@/shared/types/menu'
+import { InventoryItem } from '@/shared/types/inventory'
 import { Modal } from '../ui/Modal'
 
 interface MenuFormModalProps {
@@ -8,9 +9,10 @@ interface MenuFormModalProps {
   onSubmit: (menu: Omit<MenuItem, 'id'>) => void
   categories: string[]
   initialData?: MenuItem
+  inventory: InventoryItem[]
 }
 
-export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialData }: MenuFormModalProps) {
+export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialData, inventory }: MenuFormModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -19,7 +21,8 @@ export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialDa
     category: '음료',
     isSoldOut: false,
     isIce: false,
-    isHot: false
+    isHot: false,
+    relatedInventoryIds: [] as string[]
   })
 
   useEffect(() => {
@@ -32,7 +35,8 @@ export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialDa
         category: initialData.category,
         isSoldOut: initialData.isSoldOut,
         isIce: initialData.isIce ?? false,
-        isHot: initialData.isHot ?? false
+        isHot: initialData.isHot ?? false,
+        relatedInventoryIds: initialData.relatedInventoryIds || []
       })
     } else {
       setFormData({
@@ -43,7 +47,8 @@ export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialDa
         category: '음료',
         isSoldOut: false,
         isIce: false,
-        isHot: false
+        isHot: false,
+        relatedInventoryIds: []
       })
     }
   }, [initialData, isOpen])
@@ -68,6 +73,7 @@ export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialDa
     const baseMenuData = {
       ...formData,
       name: formData.name,
+      relatedInventoryIds: formData.relatedInventoryIds
     }
 
     if (formData.category === '음료') {
@@ -115,6 +121,20 @@ export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialDa
         hotPrice: ''
       })
     }
+  }
+
+  const handleInventorySelection = (inventoryId: string) => {
+    setFormData(prev => {
+      const isSelected = prev.relatedInventoryIds.includes(inventoryId)
+      const updatedIds = isSelected
+        ? prev.relatedInventoryIds.filter(id => id !== inventoryId)
+        : [...prev.relatedInventoryIds, inventoryId]
+      
+      return {
+        ...prev,
+        relatedInventoryIds: updatedIds
+      }
+    })
   }
 
   return (
@@ -201,6 +221,35 @@ export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialDa
             />
           </div>
         )}
+
+        <div className="space-y-2">
+          <label className="block text-sm font-medium">필요한 재고 선택</label>
+          <div className="max-h-40 overflow-y-auto border rounded-md p-2">
+            {inventory.length === 0 ? (
+              <p className="text-sm text-muted-foreground">등록된 재고가 없습니다.</p>
+            ) : (
+              <div className="space-y-2">
+                {inventory.map((item) => (
+                  <div key={item.id} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`inventory-${item.id}`}
+                      checked={formData.relatedInventoryIds.includes(item.id)}
+                      onChange={() => handleInventorySelection(item.id)}
+                      className="mr-2"
+                    />
+                    <label 
+                      htmlFor={`inventory-${item.id}`}
+                      className="text-sm cursor-pointer"
+                    >
+                      {item.name} ({item.quantity} {item.unit})
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
         <div className="space-y-2">
           <div>

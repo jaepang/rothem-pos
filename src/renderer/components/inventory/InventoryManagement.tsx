@@ -136,6 +136,23 @@ export function InventoryManagement() {
       .join(', ')
   }
 
+  // 특정 재고와 관련된 메뉴 중 품절된 메뉴 개수 가져오기
+  const getSoldOutCount = (relatedMenuIds: string[]) => {
+    const relatedMenus = menus.filter(menu => relatedMenuIds.includes(menu.id))
+    return relatedMenus.filter(menu => menu.isSoldOut).length
+  }
+
+  // 연관된 메뉴 목록 가져오기
+  const getRelatedMenus = (relatedMenuIds: string[]) => {
+    return menus.filter(menu => relatedMenuIds.includes(menu.id))
+  }
+
+  // 특정 메뉴의 품절 상태 반환
+  const isMenuSoldOut = (menuId: string) => {
+    const menu = menus.find(menu => menu.id === menuId)
+    return menu?.isSoldOut
+  }
+
   return (
     <div className="space-y-6 pt-6">
       <div className="flex justify-between items-center">
@@ -203,9 +220,24 @@ export function InventoryManagement() {
             </div>
 
             {item.relatedMenuIds.length > 0 && (
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium">연관 메뉴:</span> {getRelatedMenuNames(item.relatedMenuIds)}
-              </p>
+              <>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">연관 메뉴:</span> {getRelatedMenuNames(item.relatedMenuIds)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium">품절된 메뉴:</span> {getSoldOutCount(item.relatedMenuIds)}개 / {item.relatedMenuIds.length}개
+                </p>
+                <div className="text-xs space-y-1 max-h-20 overflow-y-auto">
+                  {getRelatedMenus(item.relatedMenuIds).map(menu => (
+                    <div 
+                      key={menu.id} 
+                      className={`px-2 py-1 rounded-sm ${menu.isSoldOut ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                    >
+                      {menu.name}: {menu.isSoldOut ? '품절' : '판매중'}
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
 
             <div className="flex items-center space-x-2 pt-2">

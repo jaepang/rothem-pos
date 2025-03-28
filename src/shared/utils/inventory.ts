@@ -158,16 +158,35 @@ export const updateMenuSoldOutStatus = (
     const relatedInventory = inventory.filter(item => 
       item.relatedMenuIds.includes(menu.id)
     )
+
+    // 메뉴의 재고 ID 목록도 업데이트
+    const relatedInventoryIds = relatedInventory.map(item => item.id)
     
-    // 관련 재고가 없거나, 모든 관련 재고 중 하나라도 0이면 품절 처리
-    const shouldBeSoldOut = relatedInventory.length > 0 && 
-      relatedInventory.some(item => item.quantity <= 0)
+    // 관련 재고가 있고, 그 중 하나라도 0 이하면 품절 처리
+    let shouldBeSoldOut = false
+    if (relatedInventory.length > 0) {
+      shouldBeSoldOut = relatedInventory.some(item => item.quantity <= 0)
+    }
     
-    // 현재 메뉴가 이미 수동으로 품절 처리됐으면 건드리지 않고,
-    // 그렇지 않으면 재고에 따라 품절 상태 업데이트
+    // 상태 업데이트
+    // 이전에 수동으로 품절 처리된 상태일 경우, 모든 재고가 충분하면 품절 해제
+    const allInventoryAvailable = relatedInventory.length > 0 && 
+      relatedInventory.every(item => item.quantity > 0)
+    
+    let updatedSoldOutStatus = menu.isSoldOut
+    
+    if (shouldBeSoldOut) {
+      // 재고 부족으로 품절 처리
+      updatedSoldOutStatus = true
+    } else if (allInventoryAvailable && menu.isSoldOut) {
+      // 재고가 충분해지면 품절 해제
+      updatedSoldOutStatus = false
+    }
+    
     return {
       ...menu,
-      isSoldOut: menu.isSoldOut || shouldBeSoldOut
+      isSoldOut: updatedSoldOutStatus,
+      relatedInventoryIds
     }
   })
 } 

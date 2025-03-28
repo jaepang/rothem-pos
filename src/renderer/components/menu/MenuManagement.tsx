@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { MenuItem, MenuList, CategoryList } from '@/shared/types/menu'
+import { InventoryList, InventoryItem } from '@/shared/types/inventory'
 import { loadMenuFromJson, saveMenuToJson, importMenuFromExcel, exportMenuToExcel, deleteMenuItem } from '@/shared/utils/menu'
 import { loadCategories } from '@/shared/utils/category'
+import { loadInventoryFromJson } from '@/shared/utils/inventory'
 import { MenuFormModal } from './MenuFormModal'
+import { MenuCard } from './MenuCard'
 
 export function MenuManagement() {
   const [menus, setMenus] = useState<MenuList>([])
   const [categories, setCategories] = useState<CategoryList>([])
+  const [inventory, setInventory] = useState<InventoryList>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedMenu, setSelectedMenu] = useState<MenuItem | undefined>(undefined)
@@ -14,12 +18,14 @@ export function MenuManagement() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [loadedMenus, loadedCategories] = await Promise.all([
+      const [loadedMenus, loadedCategories, loadedInventory] = await Promise.all([
         loadMenuFromJson(),
-        loadCategories()
+        loadCategories(),
+        loadInventoryFromJson()
       ])
       setMenus(loadedMenus)
       setCategories(loadedCategories)
+      setInventory(loadedInventory)
     }
     loadData()
   }, [])
@@ -51,8 +57,36 @@ export function MenuManagement() {
   }
 
   const handleToggleSoldOut = (menuId: string) => {
+    // 메뉴 찾기
+    const menu = menus.find(m => m.id === menuId)
+    if (!menu) return
+    
+    // 관련 재고 확인
+    const relatedInventory = inventory.filter(item => 
+      item.relatedMenuIds.includes(menuId)
+    )
+    
+    // 재고가 모두 충분한지 확인
+    const allInventorySufficient = relatedInventory.length === 0 || 
+      relatedInventory.every(item => item.quantity > 0)
+    
+    // 현재 품절 상태
+    const isSoldOut = menu.isSoldOut
+    
+    const newSoldOut = !isSoldOut
+    
+    // 재고가 부족한 상태에서 판매중으로 변경하려는 경우
+    if (isSoldOut && !allInventorySufficient) {
+      const confirmToggle = confirm(
+        '이 메뉴는 필요한 재고가 부족한 상태입니다.\n그래도 판매 상태로 변경하시겠습니까?'
+      )
+      if (!confirmToggle) {
+        return
+      }
+    }
+    
     const updatedMenus = menus.map((menu) =>
-      menu.id === menuId ? { ...menu, isSoldOut: !menu.isSoldOut } : menu
+      menu.id === menuId ? { ...menu, isSoldOut: newSoldOut } : menu
     )
     setMenus(updatedMenus)
     saveMenuToJson(updatedMenus)
@@ -88,6 +122,43 @@ export function MenuManagement() {
     if (originalMenu) {
       setSelectedMenu(originalMenu)
       setIsAddModalOpen(true)
+    }
+  }
+
+  // 특정 메뉴와 연관된 재고 항목 찾기
+  const getRelatedInventory = (menuId: string) => {
+    return inventory.filter(item => item.relatedMenuIds.includes(menuId))
+  }
+
+  // 재고 이름 목록 가져오기
+  const getInventoryNames = (inventoryItems: InventoryItem[]) => {
+    return inventoryItems.map(item => item.name).join(', ')
+  }
+
+  // 특정 메뉴에 필요한 모든 재고가 충분한지 확인
+  const hasAllRequiredInventory = (menuId: string) => {
+    const relatedInventory = inventory.filter(item => 
+      item.relatedMenuIds.includes(menuId)
+    )
+    
+    // 연관된 재고가 없거나 모든 재고가 0보다 크면 true
+    return relatedInventory.length === 0 || 
+      relatedInventory.every(item => item.quantity > 0)
+  }
+
+  // 특정 메뉴에 부족한 재고 목록 가져오기
+  const getMissingInventory = (menuId: string) => {
+    return inventory
+      .filter(item => item.relatedMenuIds.includes(menuId) && item.quantity <= 0)
+      .map(item => item.name)
+      .join(', ')
+  }
+
+  const handleDeleteMenu = (menu: MenuItem) => {
+    if (confirm('이 메뉴를 삭제하시겠습니까?')) {
+      const updatedMenus = deleteMenuItem(menu, menus)
+      setMenus(updatedMenus)
+      saveMenuToJson(updatedMenus)
     }
   }
 
@@ -166,47 +237,17 @@ export function MenuManagement() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {displayMenus.map((menu) => (
-          <div
+          <MenuCard
             key={menu.id}
-            className="p-4 border rounded-lg space-y-2 hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => handleEditMenu(menu)}
-          >
-            <div>
-              <h3 className="font-semibold">{menu.displayName}</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {menu.category}
-            </p>
-            <p className="font-medium">{menu.priceInfo}</p>
-            <div className="flex space-x-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleToggleSoldOut(menu.id)
-                }}
-                className={`flex-1 px-3 py-1 rounded transition-colors hover:opacity-90 ${
-                  menu.isSoldOut
-                    ? 'bg-destructive text-destructive-foreground'
-                    : 'bg-green-500 text-white hover:bg-green-600'
-                }`}
-              >
-                {menu.isSoldOut ? '품절' : '판매중'}
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (confirm('이 메뉴를 삭제하시겠습니까?')) {
-                    const updatedMenus = deleteMenuItem(menu, menus)
-                    setMenus(updatedMenus)
-                    saveMenuToJson(updatedMenus)
-                  }
-                }}
-                className="px-3 py-1 border border-destructive text-destructive rounded hover:bg-destructive/10 transition-colors"
-              >
-                삭제
-              </button>
-            </div>
-          </div>
+            menu={menu}
+            onEdit={handleEditMenu}
+            onToggleSoldOut={handleToggleSoldOut}
+            onDelete={handleDeleteMenu}
+            getRelatedInventory={getRelatedInventory}
+            getInventoryNames={getInventoryNames}
+            hasAllRequiredInventory={hasAllRequiredInventory}
+            getMissingInventory={getMissingInventory}
+          />
         ))}
       </div>
 
@@ -219,6 +260,7 @@ export function MenuManagement() {
         onSubmit={handleSubmitMenu}
         categories={categories.map(category => category.name)}
         initialData={selectedMenu}
+        inventory={inventory}
       />
     </div>
   )
