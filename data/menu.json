@@ -5,7 +5,7 @@
     "icePrice": 2500,
     "hotPrice": 2000,
     "category": "음료",
-    "isSoldOut": false,
+    "isSoldOut": true,
     "isFavorite": false,
     "isIce": true,
     "isHot": true,
@@ -20,29 +20,33 @@
     "price": 5000,
     "icePrice": 5000,
     "category": "음료",
-    "isSoldOut": false,
+    "isSoldOut": true,
     "isIce": true,
     "isHot": false,
     "id": "1743053951598",
-    "relatedInventoryIds": []
+    "relatedInventoryIds": [
+      "1743139406074"
+    ]
   },
   {
     "name": "치즈케이크",
     "price": 6000,
     "category": "케이크",
-    "isSoldOut": false,
+    "isSoldOut": true,
     "isFavorite": false,
     "isIce": false,
     "isHot": false,
     "imageUrl": "",
     "id": "1743053983791",
-    "relatedInventoryIds": []
+    "relatedInventoryIds": [
+      "1743139406074"
+    ]
   },
   {
     "name": "생크림케이크",
     "price": 8000,
     "category": "케이크",
-    "isSoldOut": false,
+    "isSoldOut": true,
     "isFavorite": false,
     "isIce": false,
     "isHot": false,
@@ -55,25 +59,29 @@
     "price": 3000,
     "icePrice": 3000,
     "category": "음료",
-    "isSoldOut": false,
+    "isSoldOut": true,
     "isFavorite": false,
     "isIce": true,
     "isHot": false,
     "imageUrl": "",
     "id": "1743054016635",
-    "relatedInventoryIds": []
+    "relatedInventoryIds": [
+      "1743139406074"
+    ]
   },
   {
     "name": "찬원이의 원픽",
     "price": 2500,
     "category": "아이스크림",
-    "isSoldOut": false,
+    "isSoldOut": true,
     "isFavorite": false,
     "isIce": false,
     "isHot": false,
     "imageUrl": "",
     "id": "1743054055570",
-    "relatedInventoryIds": []
+    "relatedInventoryIds": [
+      "1743139406074"
+    ]
   },
   {
     "name": "카페라떼",
@@ -81,7 +89,7 @@
     "icePrice": 3500,
     "hotPrice": 3000,
     "category": "음료",
-    "isSoldOut": false,
+    "isSoldOut": true,
     "isIce": true,
     "isHot": true,
     "id": "1743139712821",

@@ -193,7 +193,11 @@ export function InventoryManagement() {
         {inventory.map((item) => (
           <div
             key={item.id}
-            className="p-4 border rounded-lg space-y-3 hover:shadow-md transition-shadow"
+            className="p-4 border rounded-lg space-y-3 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => {
+              setSelectedItem(item)
+              setIsAddModalOpen(true)
+            }}
           >
             <div className="flex justify-between items-start">
               <div>
@@ -202,7 +206,8 @@ export function InventoryManagement() {
               </div>
               <div className="flex space-x-1">
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation()
                     setSelectedItem(item)
                     setIsAddModalOpen(true)
                   }}
@@ -211,7 +216,10 @@ export function InventoryManagement() {
                   수정
                 </button>
                 <button
-                  onClick={() => handleDeleteInventoryItem(item.id)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDeleteInventoryItem(item.id)
+                  }}
                   className="p-1.5 text-sm bg-destructive text-destructive-foreground rounded hover:bg-destructive/90"
                 >
                   삭제
@@ -227,13 +235,15 @@ export function InventoryManagement() {
                 <p className="text-xs text-muted-foreground">
                   <span className="font-medium">품절된 메뉴:</span> {getSoldOutCount(item.relatedMenuIds)}개 / {item.relatedMenuIds.length}개
                 </p>
-                <div className="text-xs space-y-1 max-h-20 overflow-y-auto">
+                <div className="grid grid-cols-3 gap-1 max-h-20 overflow-y-auto">
                   {getRelatedMenus(item.relatedMenuIds).map(menu => (
                     <div 
                       key={menu.id} 
-                      className={`px-2 py-1 rounded-sm ${menu.isSoldOut ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                      className={`px-1.5 py-0.5 text-xs rounded-sm text-center truncate ${
+                        menu.isSoldOut ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                      }`}
                     >
-                      {menu.name}: {menu.isSoldOut ? '품절' : '판매중'}
+                      {menu.name}
                     </div>
                   ))}
                 </div>
@@ -242,7 +252,10 @@ export function InventoryManagement() {
 
             <div className="flex items-center space-x-2 pt-2">
               <button
-                onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleQuantityChange(item.id, item.quantity - 1)
+                }}
                 className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
                 disabled={item.quantity <= 0}
               >
@@ -258,7 +271,10 @@ export function InventoryManagement() {
                 className="w-16 px-2 py-1 text-center border rounded-md"
               />
               <button
-                onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleQuantityChange(item.id, item.quantity + 1)
+                }}
                 className="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
               >
                 +

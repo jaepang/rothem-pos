@@ -1,19 +1,25 @@
 import { useState, useEffect } from 'react'
-import { Category, CategoryList } from '@/shared/types/menu'
+import { Category, CategoryList, MenuItem, MenuList } from '@/shared/types/menu'
 import { loadCategories, saveCategories, addCategory, updateCategory, deleteCategory, reorderCategories } from '@/shared/utils/category'
+import { loadMenuFromJson } from '@/shared/utils/menu'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 
 export function CategoryManagement() {
   const [categories, setCategories] = useState<CategoryList>([])
+  const [menus, setMenus] = useState<MenuList>([])
   const [newCategoryName, setNewCategoryName] = useState('')
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
 
   useEffect(() => {
-    const loadCategoryData = async () => {
-      const loadedCategories = await loadCategories()
+    const loadData = async () => {
+      const [loadedCategories, loadedMenus] = await Promise.all([
+        loadCategories(),
+        loadMenuFromJson()
+      ])
       setCategories(loadedCategories)
+      setMenus(loadedMenus)
     }
-    loadCategoryData()
+    loadData()
   }, [])
 
   const handleAddCategory = async (e: React.FormEvent) => {
@@ -81,7 +87,7 @@ export function CategoryManagement() {
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="space-y-2"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
             >
               {categories.map((category, index) => (
                 <Draggable
@@ -94,25 +100,58 @@ export function CategoryManagement() {
                       ref={provided.innerRef}
                       {...provided.draggableProps}
                       {...provided.dragHandleProps}
-                      className="flex items-center justify-between p-4 bg-background border rounded-lg"
+                      className="flex flex-col p-4 bg-background border rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => {
+                        if (editingCategory?.id !== category.id) {
+                          setEditingCategory(category)
+                        }
+                      }}
                     >
-                      {editingCategory?.id === category.id ? (
-                        <input
-                          type="text"
-                          value={editingCategory.name}
-                          onChange={(e) =>
-                            setEditingCategory({
-                              ...editingCategory,
-                              name: e.target.value
-                            })
-                          }
-                          className="flex-1 px-3 py-2 border rounded-md mr-2"
-                          autoFocus
-                        />
-                      ) : (
-                        <span className="flex-1">{category.name}</span>
-                      )}
-                      <div className="flex space-x-2">
+                      <div className="flex items-center justify-between mb-2">
+                        {editingCategory?.id === category.id ? (
+                          <input
+                            type="text"
+                            value={editingCategory.name}
+                            onChange={(e) =>
+                              setEditingCategory({
+                                ...editingCategory,
+                                name: e.target.value
+                              })
+                            }
+                            className="flex-1 px-3 py-2 border rounded-md mr-2"
+                            autoFocus
+                          />
+                        ) : (
+                          <span className="flex-1 font-medium">{category.name}</span>
+                        )}
+                      </div>
+                      <div className="mt-2 mb-4">
+                        <div className="text-sm text-muted-foreground mb-1">메뉴 목록</div>
+                        <div className="space-y-1">
+                          {menus
+                            .filter(menu => menu.category === category.name)
+                            .map(menu => (
+                              <div key={menu.id} className="text-sm flex justify-between items-center">
+                                <span>{menu.name}</span>
+                                <span className="text-muted-foreground">
+                                  {menu.category === '음료' ? (
+                                    <>
+                                      {menu.isIce && <span>ICE {menu.icePrice?.toLocaleString()}원</span>}
+                                      {menu.isIce && menu.isHot && <span className="mx-1">/</span>}
+                                      {menu.isHot && <span>HOT {menu.hotPrice?.toLocaleString()}원</span>}
+                                    </>
+                                  ) : (
+                                    `${menu.price.toLocaleString()}원`
+                                  )}
+                                </span>
+                              </div>
+                            ))}
+                          {menus.filter(menu => menu.category === category.name).length === 0 && (
+                            <div className="text-sm text-muted-foreground">메뉴가 없습니다</div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex justify-end space-x-2 mt-auto">
                         {editingCategory?.id === category.id ? (
                           <>
                             <button
