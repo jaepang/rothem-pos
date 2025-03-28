@@ -81,7 +81,7 @@
     "icePrice": 3500,
     "hotPrice": 3000,
     "category": "음료",
-    "isSoldOut": true,
+    "isSoldOut": false,
     "isIce": true,
     "isHot": true,
     "id": "1743139712821",

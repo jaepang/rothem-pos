@@ -312,12 +312,11 @@ const OrderManagement: React.FC = () => {
   }
 
   return (
-    <div className="h-[calc(94vh-0.1rem)] grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
-      <div className={`${showCompletedOrders ? 'lg:col-span-4' : 'lg:col-span-8'} transition-all duration-300 overflow-hidden`}>
-        <div className="h-full overflow-y-auto px-6">
+    <div className="h-[calc(94vh-0.1rem)] w-100vw grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden">
+      <div className={`${showCompletedOrders ? 'lg:col-span-6' : 'lg:col-span-9'} transition-all duration-300 overflow-hidden`}>
+        <div className="h-full overflow-y-auto">
           <div className="space-y-6 pb-6">
             <div className="flex flex-col gap-4 pt-6">
-              <h2 className="text-3xl font-bold">주문 관리</h2>
               <div className="flex flex-wrap gap-2">
                 {categories.map(category => (
                   <button
@@ -361,7 +360,6 @@ const OrderManagement: React.FC = () => {
               </div>
 
               <div className="mt-4 bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-xl font-bold mb-3">주문 내역</h3>
                 <div className="mb-4">
                   <h4 className="text-lg font-medium text-gray-900 mb-2">
                     메모
@@ -467,15 +465,15 @@ const OrderManagement: React.FC = () => {
         </div>
       </div>
 
-      <div className="lg:col-span-4 overflow-hidden">
-        <div className="h-full overflow-y-auto px-6">
+      <div className="lg:col-span-3 overflow-hidden">
+        <div className="h-full overflow-y-auto">
           <div className="flex justify-between items-center pt-6 pb-4">
             <h2 className="text-3xl font-bold">처리중인 주문</h2>
             <button
               onClick={() => setShowCompletedOrders(!showCompletedOrders)}
               className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center gap-1"
             >
-              주문 상세보기
+              상세보기
               <svg
                 className={`w-4 h-4 transform transition-transform ${showCompletedOrders ? 'rotate-180' : ''}`}
                 fill="none"
@@ -507,8 +505,8 @@ const OrderManagement: React.FC = () => {
       </div>
 
       {showCompletedOrders && (
-        <div className="lg:col-span-4 overflow-hidden">
-          <div className="h-full overflow-y-auto px-6">
+        <div className="lg:col-span-3 overflow-hidden">
+          <div className="h-full overflow-y-auto">
             <div className="pt-6 pb-4">
               <h2 className="text-3xl font-bold">완료된 주문</h2>
             </div>

@@ -1,14 +1,14 @@
 import React, { useState } from 'react'
 import { Order } from '@/shared/types/order'
 
-interface PendingOrderCardProps {
+interface OrderCardProps {
   order: Order
   onComplete: (orderId: string) => void
   onCancel: (orderId: string) => void
   onDelete?: (orderId: string) => void
 }
 
-export const PendingOrderCard: React.FC<PendingOrderCardProps> = ({
+export const OrderCard: React.FC<OrderCardProps> = ({
   order,
   onComplete,
   onCancel,
@@ -70,10 +70,11 @@ export const PendingOrderCard: React.FC<PendingOrderCardProps> = ({
         {order.items.map(item => (
           <div
             key={`${item.menuItem.id}-${item.menuItem.isHot}-${item.menuItem.isIce}`}
-            className="flex justify-between text-sm"
+            className={`flex justify-between text-sm ${item.menuItem.isSoldOut ? 'opacity-50 line-through text-gray-400' : ''}`}
           >
             <div className="flex gap-1">
               <span>{item.menuItem.displayName}</span>
+              {item.menuItem.isSoldOut && <span className="text-red-500 ml-1">(품절)</span>}
               <span className="text-gray-600">× {item.quantity}</span>
             </div>
             <span className="text-gray-600">{(item.menuItem.price * item.quantity).toLocaleString()}원</span>
@@ -95,6 +96,8 @@ export const PendingOrderCard: React.FC<PendingOrderCardProps> = ({
               <button
                 onClick={() => onComplete(order.id)}
                 className="h-8 px-3 rounded bg-green-500 text-white hover:bg-green-600 text-sm font-medium"
+                disabled={order.items.some(item => item.menuItem.isSoldOut)}
+                title={order.items.some(item => item.menuItem.isSoldOut) ? '품절된 메뉴가 포함되어 있습니다' : ''}
               >
                 완료
               </button>
