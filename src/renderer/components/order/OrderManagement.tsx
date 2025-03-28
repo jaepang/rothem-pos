@@ -4,7 +4,11 @@ import { Order, OrderItem } from '@/shared/types/order'
 import { loadMenuFromJson } from '@/shared/utils/menu'
 import { initializePrinter, getPrinterStatus, printOrder } from '@/shared/utils/printer'
 import { saveOrder, getOrders } from '@/shared/utils/order'
-import { PendingOrderCard } from './PendingOrderCard'
+import { OrderCard } from './OrderCard'
+
+// localStorage 키 상수
+const ORDER_ITEMS_STORAGE_KEY = 'orderItems'
+const ORDER_MEMO_STORAGE_KEY = 'orderMemo'
 
 const OrderManagement: React.FC = () => {
   const [menus, setMenus] = useState<MenuList>([])
@@ -13,8 +17,61 @@ const OrderManagement: React.FC = () => {
   const [memo, setMemo] = useState<string>('')
   const [isPrinterConnected, setIsPrinterConnected] = useState<boolean>(false)
   const [orders, setOrders] = useState<Order[]>([])
-  const [showOrderList, setShowOrderList] = useState<boolean>(false)
   const [showCompletedOrders, setShowCompletedOrders] = useState<boolean>(false)
+
+  // localStorage에 orderItems 저장
+  const saveOrderItemsToStorage = (items: OrderItem[]) => {
+    try {
+      localStorage.setItem(ORDER_ITEMS_STORAGE_KEY, JSON.stringify(items))
+    } catch (error) {
+      console.error('주문 목록 저장 실패:', error)
+    }
+  }
+
+  // localStorage에서 orderItems 복원
+  const loadOrderItemsFromStorage = (): OrderItem[] => {
+    try {
+      const storedItems = localStorage.getItem(ORDER_ITEMS_STORAGE_KEY)
+      if (!storedItems) return []
+      return JSON.parse(storedItems)
+    } catch (error) {
+      console.error('주문 목록 불러오기 실패:', error)
+      return []
+    }
+  }
+
+  // localStorage에서 orderItems 제거
+  const clearOrderItemsFromStorage = () => {
+    try {
+      localStorage.removeItem(ORDER_ITEMS_STORAGE_KEY)
+      localStorage.removeItem(ORDER_MEMO_STORAGE_KEY)
+    } catch (error) {
+      console.error('주문 정보 삭제 실패:', error)
+    }
+  }
+
+  // localStorage에 메모 저장
+  const saveMemoToStorage = (memoText: string) => {
+    try {
+      if (memoText) {
+        localStorage.setItem(ORDER_MEMO_STORAGE_KEY, memoText)
+      } else {
+        localStorage.removeItem(ORDER_MEMO_STORAGE_KEY)
+      }
+    } catch (error) {
+      console.error('메모 저장 실패:', error)
+    }
+  }
+
+  // localStorage에서 메모 복원
+  const loadMemoFromStorage = (): string => {
+    try {
+      return localStorage.getItem(ORDER_MEMO_STORAGE_KEY) || ''
+    } catch (error) {
+      console.error('메모 불러오기 실패:', error)
+      return ''
+    }
+  }
 
   useEffect(() => {
     const loadMenus = async () => {
@@ -36,7 +93,66 @@ const OrderManagement: React.FC = () => {
     loadMenus()
     initPrinter()
     loadOrders()
+
+    // 컴포넌트가 마운트될 때 localStorage에서 orderItems 복원
+    const storedOrderItems = loadOrderItemsFromStorage()
+    const storedMemo = loadMemoFromStorage()
+    
+    // localStorage에서 항목을 복원한 후 제거 (pop)
+    if (storedOrderItems.length > 0) {
+      clearOrderItemsFromStorage()
+      
+      // 품절된 메뉴를 필터링하지 않고 그대로 복원
+      setOrderItems(storedOrderItems)
+      
+      // 품절된 메뉴 확인 (정보 제공용)
+      if (menus && menus.length > 0) {
+        const soldOutItems = storedOrderItems.filter(item => {
+          const currentMenu = menus.find(menu => menu.id === item.menuItem.id)
+          return currentMenu && currentMenu.isSoldOut
+        })
+        
+        // 품절된 메뉴가 있으면 사용자에게 알림만 제공
+        if (soldOutItems.length > 0) {
+          const soldOutNames = soldOutItems.map(item => item.menuItem.displayName).join(', ')
+          setTimeout(() => {
+            alert(`주문 목록에 품절된 메뉴(${soldOutNames})가 포함되어 있습니다. 주문 시 해당 메뉴를 제거해주세요.`)
+          }, 500)
+        }
+      }
+    }
+    
+    // 메모도 복원
+    if (storedMemo) {
+      setMemo(storedMemo)
+    }
+
+    // 컴포넌트가 언마운트될 때 호출되는 클린업 함수
+    // SPA에서는 실제로 호출되지 않을 수 있음
+    return () => {
+      // console.log 제거
+    }
   }, [])
+
+  // orderItems 변경 시 localStorage에 저장하는 useEffect 추가
+  useEffect(() => {
+    // console.log 제거
+    if (orderItems.length > 0) {
+      saveOrderItemsToStorage(orderItems)
+    } else {
+      localStorage.removeItem(ORDER_ITEMS_STORAGE_KEY)
+    }
+  }, [orderItems])
+
+  // memo 변경 시 localStorage에 저장하는 useEffect 추가
+  useEffect(() => {
+    // console.log 제거
+    if (memo) {
+      saveMemoToStorage(memo)
+    } else {
+      localStorage.removeItem(ORDER_MEMO_STORAGE_KEY)
+    }
+  }, [memo])
 
   const categories = ['전체', ...new Set(menus.map(menu => menu.category))]
   const filteredMenus = selectedCategory === '전체'
@@ -120,9 +236,22 @@ const OrderManagement: React.FC = () => {
         return
       }
 
+      // 품절된 메뉴 확인
+      const soldOutItems = orderItems.filter(item => {
+        const currentMenu = menus.find(menu => menu.id === item.menuItem.id)
+        return currentMenu && currentMenu.isSoldOut
+      })
+      
+      // 품절된 메뉴가 있는 경우 주문 불가 알림
+      if (soldOutItems.length > 0) {
+        const soldOutNames = soldOutItems.map(item => item.menuItem.displayName).join(', ')
+        alert(`품절된 메뉴(${soldOutNames})가 포함되어 있어 주문할 수 없습니다. 품절된 메뉴를 제거해주세요.`)
+        return
+      }
+
       const order: Order = {
         id: Date.now().toString(),
-        items: orderItems,
+        items: orderItems,  // 품절 필터링 없이 그대로 사용
         totalAmount: orderItems.reduce(
           (sum, item) => sum + item.menuItem.price * item.quantity,
           0
@@ -151,9 +280,10 @@ const OrderManagement: React.FC = () => {
         }
       }
 
-      // 주문 초기화
+      // 주문 초기화 및 localStorage에서 orderItems 제거
       setOrderItems([])
       setMemo('')
+      clearOrderItemsFromStorage()
       alert('주문이 등록되었습니다.')
     } catch (error) {
       console.error('주문 등록 실패:', error)
@@ -220,10 +350,17 @@ const OrderManagement: React.FC = () => {
                 {displayMenus.map(menu => (
                   <button
                     key={`${menu.id}-${menu.isHot}-${menu.isIce}`}
-                    className="p-3 bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                    onClick={() => handleAddItem(menu)}
+                    className={`p-3 bg-white border rounded-lg shadow-sm 
+                      ${menu.isSoldOut 
+                        ? 'opacity-50 cursor-not-allowed border-red-300 bg-red-50' 
+                        : 'hover:shadow-md transition-shadow'}`}
+                    onClick={() => !menu.isSoldOut && handleAddItem(menu)}
+                    disabled={menu.isSoldOut}
                   >
-                    <div className="font-bold">{menu.displayName}</div>
+                    <div className="font-bold">
+                      {menu.displayName}
+                      {menu.isSoldOut && <span className="text-red-500 ml-1">(품절)</span>}
+                    </div>
                     <div className="text-gray-600">{menu.price.toLocaleString()}원</div>
                   </button>
                 ))}
@@ -245,46 +382,56 @@ const OrderManagement: React.FC = () => {
 
                 {orderItems.length > 0 && (
                   <div className="space-y-2 mb-4 max-h-[300px] overflow-y-auto">
-                    {orderItems.map(item => (
-                      <div
-                        key={`${item.menuItem.id}-${item.menuItem.isHot}-${item.menuItem.isIce}`}
-                        className="flex items-center justify-between p-3 bg-white border rounded-lg"
-                      >
-                        <div className="font-medium flex-1">
-                          {item.menuItem.displayName}
+                    {orderItems.map(item => {
+                      // 현재 메뉴 품절 상태 확인
+                      const currentMenu = menus.find(menu => menu.id === item.menuItem.id)
+                      const isSoldOut = currentMenu ? currentMenu.isSoldOut : false
+                      
+                      return (
+                        <div
+                          key={`${item.menuItem.id}-${item.menuItem.isHot}-${item.menuItem.isIce}`}
+                          className={`flex items-center justify-between p-3 bg-white border rounded-lg ${
+                            isSoldOut ? 'opacity-70 border-red-300 bg-red-50' : ''
+                          }`}
+                        >
+                          <div className="font-medium flex-1">
+                            {item.menuItem.displayName}
+                            {isSoldOut && <span className="text-red-500 ml-1">(품절)</span>}
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className="text-gray-600">{item.menuItem.price.toLocaleString()}원</span>
+                            <button
+                              className="w-7 h-7 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
+                              onClick={() =>
+                                handleUpdateQuantity(
+                                  item.menuItem.id,
+                                  item.menuItem.isIce,
+                                  item.menuItem.isHot,
+                                  item.quantity - 1
+                                )
+                              }
+                            >
+                              -
+                            </button>
+                            <span className="w-8 text-center font-medium">{item.quantity}</span>
+                            <button
+                              className="w-7 h-7 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
+                              onClick={() =>
+                                handleUpdateQuantity(
+                                  item.menuItem.id,
+                                  item.menuItem.isIce,
+                                  item.menuItem.isHot,
+                                  item.quantity + 1
+                                )
+                              }
+                              disabled={isSoldOut}
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-gray-600">{item.menuItem.price.toLocaleString()}원</span>
-                          <button
-                            className="w-7 h-7 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
-                            onClick={() =>
-                              handleUpdateQuantity(
-                                item.menuItem.id,
-                                item.menuItem.isIce,
-                                item.menuItem.isHot,
-                                item.quantity - 1
-                              )
-                            }
-                          >
-                            -
-                          </button>
-                          <span className="w-8 text-center font-medium">{item.quantity}</span>
-                          <button
-                            className="w-7 h-7 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
-                            onClick={() =>
-                              handleUpdateQuantity(
-                                item.menuItem.id,
-                                item.menuItem.isIce,
-                                item.menuItem.isHot,
-                                item.quantity + 1
-                              )
-                            }
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
 
@@ -297,12 +444,28 @@ const OrderManagement: React.FC = () => {
                       )
                       .toLocaleString()}원
                   </div>
-                  <button
-                    className="w-full py-3 rounded-lg text-lg font-medium bg-blue-500 text-white hover:bg-blue-600"
-                    onClick={handleCreateOrder}
-                  >
-                    주문하기
-                  </button>
+                  {/* 주문 목록에 품절된 메뉴가 있는지 확인 */}
+                  {(() => {
+                    const hasSoldOutItems = orderItems.some(item => {
+                      const currentMenu = menus.find(menu => menu.id === item.menuItem.id)
+                      return currentMenu && currentMenu.isSoldOut
+                    })
+                    
+                    return (
+                      <button
+                        className={`w-full py-3 rounded-lg text-lg font-medium ${
+                          hasSoldOutItems 
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                        }`}
+                        onClick={handleCreateOrder}
+                        disabled={hasSoldOutItems}
+                        title={hasSoldOutItems ? "품절된 메뉴가 포함되어 있어 주문할 수 없습니다." : ""}
+                      >
+                        {hasSoldOutItems ? '품절된 메뉴 포함' : '주문하기'}
+                      </button>
+                    )
+                  })()}
                 </div>
               </div>
             </div>
@@ -333,7 +496,7 @@ const OrderManagement: React.FC = () => {
             {orders
               .filter(order => order.status === 'pending')
               .map(order => (
-                <PendingOrderCard
+                <OrderCard
                   key={order.id}
                   order={order}
                   onComplete={handleCompleteOrder}
@@ -360,7 +523,7 @@ const OrderManagement: React.FC = () => {
                 .filter(order => order.status === 'completed' || order.status === 'cancelled')
                 .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
                 .map(order => (
-                  <PendingOrderCard
+                  <OrderCard
                     key={order.id}
                     order={order}
                     onComplete={handleCompleteOrder}
