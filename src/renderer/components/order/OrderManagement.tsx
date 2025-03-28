@@ -3,7 +3,7 @@ import { MenuItem, MenuList } from '@/shared/types/menu'
 import { Order, OrderItem } from '@/shared/types/order'
 import { loadMenuFromJson } from '@/shared/utils/menu'
 import { initializePrinter, getPrinterStatus, printOrder } from '@/shared/utils/printer'
-import { saveOrder, getOrders } from '@/shared/utils/order'
+import { saveOrder, getOrders, ORDERS_STORAGE_KEY } from '@/shared/utils/order'
 import { OrderCard } from './OrderCard'
 
 // localStorage 키 상수
@@ -86,8 +86,10 @@ const OrderManagement: React.FC = () => {
     }
 
     const loadOrders = () => {
-      const savedOrders = getOrders()
-      setOrders(savedOrders)
+      const pendingOrders = getOrders('pending')
+      const completedOrders = getOrders('completed')
+      const cancelledOrders = getOrders('cancelled')
+      setOrders([...pendingOrders, ...completedOrders, ...cancelledOrders])
     }
 
     loadMenus()
@@ -126,17 +128,10 @@ const OrderManagement: React.FC = () => {
     if (storedMemo) {
       setMemo(storedMemo)
     }
-
-    // 컴포넌트가 언마운트될 때 호출되는 클린업 함수
-    // SPA에서는 실제로 호출되지 않을 수 있음
-    return () => {
-      // console.log 제거
-    }
   }, [])
 
   // orderItems 변경 시 localStorage에 저장하는 useEffect 추가
   useEffect(() => {
-    // console.log 제거
     if (orderItems.length > 0) {
       saveOrderItemsToStorage(orderItems)
     } else {
@@ -146,7 +141,6 @@ const OrderManagement: React.FC = () => {
 
   // memo 변경 시 localStorage에 저장하는 useEffect 추가
   useEffect(() => {
-    // console.log 제거
     if (memo) {
       saveMemoToStorage(memo)
     } else {
@@ -292,29 +286,29 @@ const OrderManagement: React.FC = () => {
   }
 
   const handleCompleteOrder = (orderId: string) => {
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.id === orderId
-          ? { ...order, status: 'completed', completedAt: new Date().toISOString() }
-          : order
-      )
+    const updatedOrders = orders.map(order =>
+      order.id === orderId
+        ? { ...order, status: 'completed' as const, completedAt: new Date().toISOString() }
+        : order
     )
+    setOrders(updatedOrders)
+    updatedOrders.forEach(order => saveOrder(order))
   }
 
   const handleCancelOrder = (orderId: string) => {
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.id === orderId
-          ? { ...order, status: 'cancelled' }
-          : order
-      )
+    const updatedOrders = orders.map(order =>
+      order.id === orderId
+        ? { ...order, status: 'cancelled' as const }
+        : order
     )
+    setOrders(updatedOrders)
+    updatedOrders.forEach(order => saveOrder(order))
   }
 
   const handleDeleteOrder = (orderId: string) => {
-    setOrders(prevOrders =>
-      prevOrders.filter(order => order.id !== orderId)
-    )
+    const updatedOrders = orders.filter(order => order.id !== orderId)
+    setOrders(updatedOrders)
+    updatedOrders.forEach(order => saveOrder(order))
   }
 
   return (

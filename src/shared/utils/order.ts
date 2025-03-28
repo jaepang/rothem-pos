@@ -13,17 +13,31 @@ interface ExcelOrder {
   메모: string;
 }
 
-const ORDERS_STORAGE_KEY = 'pos_orders'
+export const ORDERS_STORAGE_KEY = 'pos_orders'
 
 export const saveOrder = (order: Order): void => {
-  const orders = getOrders()
-  orders.push(order)
-  localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders))
+  const ordersJson = localStorage.getItem(ORDERS_STORAGE_KEY)
+  const allOrders = ordersJson ? JSON.parse(ordersJson) : []
+  
+  const existingOrderIndex = allOrders.findIndex((o: Order) => o.id === order.id)
+  if (existingOrderIndex >= 0) {
+    // 기존 주문 업데이트
+    allOrders[existingOrderIndex] = order
+  } else {
+    // 새 주문 추가
+    allOrders.push(order)
+  }
+  
+  localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(allOrders))
 }
 
-export const getOrders = (): OrderList => {
+export const getOrders = (status?: 'pending' | 'completed' | 'cancelled'): OrderList => {
   const ordersJson = localStorage.getItem(ORDERS_STORAGE_KEY)
-  return ordersJson ? JSON.parse(ordersJson) : []
+  const allOrders = ordersJson ? JSON.parse(ordersJson) : []
+  
+  if (!status) return allOrders
+  
+  return allOrders.filter((order: Order) => order.status === status)
 }
 
 export const updateOrderStatus = (orderId: string, status: 'pending' | 'completed'): void => {
