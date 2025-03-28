@@ -1,6 +1,6 @@
 import React from 'react'
 
-type TabType = 'order' | 'menu' | 'category'
+type TabType = 'order' | 'menu' | 'category' | 'inventory'
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -52,6 +52,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, activeTab, onTabChang
               }`}
             >
               카테고리 관리
+            </button>
+            <button
+              onClick={() => onTabChange('inventory')}
+              className={`px-4 py-2 rounded-md ${
+                activeTab === 'inventory'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
+              }`}
+            >
+              재고 관리
             </button>
           </div>
         </div>

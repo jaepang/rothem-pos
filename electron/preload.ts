@@ -22,6 +22,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveMenuToJson: (menuList: any) => 
       ipcRenderer.invoke('menu:saveToJson', menuList),
   },
+  inventory: {
+    loadInventoryFromJson: () => 
+      ipcRenderer.invoke('inventory:loadFromJson'),
+    saveInventoryToJson: (inventoryList: any) => 
+      ipcRenderer.invoke('inventory:saveToJson', inventoryList),
+  },
   printer: {
     initialize: () => 
       ipcRenderer.invoke('printer:initialize'),
@@ -36,6 +42,9 @@ contextBridge.exposeInMainWorld('electron', {
   ipcRenderer: {
     send: (channel: string, data: any) => {
       ipcRenderer.send(channel, data)
+    },
+    sendSync: (channel: string, ...args: any[]) => {
+      return ipcRenderer.sendSync(channel, ...args)
     },
     on: (channel: string, func: (...args: any[]) => void) => {
       ipcRenderer.on(channel, (event, ...args) => func(...args))

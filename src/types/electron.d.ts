@@ -1,5 +1,6 @@
 import { MenuList } from '../types/menu'
 import { Order } from '../types/order'
+import { InventoryList } from '../types/inventory'
 
 interface ElectronAPI {
   versions: NodeJS.ProcessVersions
@@ -14,6 +15,10 @@ interface ElectronAPI {
   menu: {
     loadMenuFromJson: () => Promise<MenuList>
     saveMenuToJson: (menuList: MenuList) => Promise<void>
+  }
+  inventory: {
+    loadInventoryFromJson: () => Promise<InventoryList>
+    saveInventoryToJson: (inventoryList: InventoryList) => Promise<void>
   }
   printer: {
     initialize: () => Promise<boolean>
