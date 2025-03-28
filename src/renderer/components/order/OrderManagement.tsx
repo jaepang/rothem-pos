@@ -340,30 +340,98 @@ const OrderManagement: React.FC = () => {
                   ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' 
                   : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'
               } gap-3`}>
-                {displayMenus.map(menu => (
-                  <button
-                    key={`${menu.id}-${menu.isHot}-${menu.isIce}`}
-                    className={`p-3 bg-white border rounded-lg shadow-sm 
-                      ${menu.isSoldOut 
-                        ? 'opacity-50 cursor-not-allowed border-red-300 bg-red-50' 
-                        : 'hover:shadow-md transition-shadow'}`}
-                    onClick={() => !menu.isSoldOut && handleAddItem(menu)}
-                    disabled={menu.isSoldOut}
-                  >
-                    <div className="font-bold">
-                      {menu.displayName}
-                      {menu.isSoldOut && <span className="text-red-500 ml-1">(품절)</span>}
-                    </div>
-                    <div className="text-gray-600">{menu.price.toLocaleString()}원</div>
-                  </button>
-                ))}
+                {displayMenus.map(menu => {
+                  const isSelected = orderItems.some(item => 
+                    item.menuItem.id === menu.id && 
+                    item.menuItem.isIce === menu.isIce && 
+                    item.menuItem.isHot === menu.isHot
+                  )
+                  
+                  const selectedItem = isSelected ? orderItems.find(item => 
+                    item.menuItem.id === menu.id && 
+                    item.menuItem.isIce === menu.isIce && 
+                    item.menuItem.isHot === menu.isHot
+                  ) : null
+                  
+                  return (
+                    <button
+                      key={`${menu.id}-${menu.isHot}-${menu.isIce}`}
+                      className={`p-3 bg-white border rounded-lg shadow-sm 
+                        ${menu.isSoldOut 
+                          ? 'opacity-50 cursor-not-allowed border-red-300 bg-red-50' 
+                          : isSelected
+                            ? 'border-blue-500 border-2 shadow-md bg-blue-50'
+                            : 'hover:shadow-md transition-shadow'}`}
+                      onClick={() => !menu.isSoldOut && handleAddItem(menu)}
+                      disabled={menu.isSoldOut}
+                    >
+                      <div className="font-bold text-left">
+                        {menu.displayName}
+                        {menu.isSoldOut && <span className="text-red-500 ml-1">(품절)</span>}
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <div className="text-gray-600">{menu.price.toLocaleString()}원</div>
+                        {isSelected && selectedItem && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              className="w-6 h-6 flex items-center justify-center bg-blue-100 rounded-full hover:bg-blue-200 text-blue-600"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleUpdateQuantity(
+                                  menu.id,
+                                  menu.isIce,
+                                  menu.isHot,
+                                  selectedItem.quantity - 1
+                                )
+                              }}
+                            >
+                              -
+                            </button>
+                            <span className="w-6 text-center text-blue-600 font-medium">{selectedItem.quantity}</span>
+                            <button
+                              className="w-6 h-6 flex items-center justify-center bg-blue-100 rounded-full hover:bg-blue-200 text-blue-600"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleUpdateQuantity(
+                                  menu.id,
+                                  menu.isIce,
+                                  menu.isHot,
+                                  selectedItem.quantity + 1
+                                )
+                              }}
+                              disabled={menu.isSoldOut}
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
 
               <div className="mt-4 bg-gray-50 p-4 rounded-lg">
-                <div className="mb-4">
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">
-                    메모
-                  </h4>
+                <div className="mb-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-lg font-medium text-gray-900">
+                      메모
+                    </h4>
+                    {orderItems.length > 0 && (
+                      <button
+                        className="px-4 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                        onClick={() => {
+                          if (window.confirm('주문 목록을 모두 삭제하시겠습니까?')) {
+                            setOrderItems([])
+                            setMemo('')
+                            clearOrderItemsFromStorage()
+                          }
+                        }}
+                      >
+                        주문 목록 초기화
+                      </button>
+                    )}
+                  </div>
                   <textarea
                     className="w-full px-3 py-1.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     value={memo}
@@ -373,7 +441,7 @@ const OrderManagement: React.FC = () => {
                 </div>
 
                 {orderItems.length > 0 && (
-                  <div className="space-y-2 mb-4 max-h-[300px] overflow-y-auto">
+                  <div className="space-y-2 mb-2 max-h-[300px] overflow-y-auto">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                       {orderItems.map(item => {
                         // 현재 메뉴 품절 상태 확인
