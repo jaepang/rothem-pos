@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { MenuItem } from '@/shared/types/menu'
+import { Modal } from '../ui/Modal'
 
 interface MenuFormModalProps {
   isOpen: boolean
@@ -117,139 +117,130 @@ export function MenuFormModal({ isOpen, onClose, onSubmit, categories, initialDa
     }
   }
 
-  if (!isOpen) return null
-
-  return createPortal(
-    <div 
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose()
-        }
-      }}
+  return (
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title={initialData ? '메뉴 수정' : '메뉴 추가'}
     >
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6">{initialData ? '메뉴 수정' : '메뉴 추가'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">메뉴명</label>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            className="w-full px-3 py-2 border rounded-md"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">카테고리</label>
+          <select
+            value={formData.category}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            className="w-full px-3 py-2 border rounded-md"
+            required
+          >
+            <option value="">카테고리 선택</option>
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {formData.category === '음료' ? (
+          <div className="space-y-4">
+            <p className="text-sm text-red-500 font-medium">* 가격을 명시한 항목만 등록됩니다</p>
+            <div className="flex space-x-4">
+              <div className="flex-1 space-y-2">
+                <div>
+                  <label className="block text-sm font-medium mb-1">ICE 가격</label>
+                  <input
+                    type="number"
+                    value={formData.icePrice}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      icePrice: e.target.value,
+                      isIce: e.target.value !== ''
+                    })}
+                    className="w-full px-3 py-2 border rounded-md"
+                  />
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <div>
+                  <label className="block text-sm font-medium mb-1">HOT 가격</label>
+                  <input
+                    type="number"
+                    value={formData.hotPrice}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      hotPrice: e.target.value,
+                      isHot: e.target.value !== ''
+                    })}
+                    className="w-full px-3 py-2 border rounded-md"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
           <div>
-            <label className="block text-sm font-medium mb-1">메뉴명</label>
+            <label className="block text-sm font-medium mb-1">가격</label>
             <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              type="number"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
               className="w-full px-3 py-2 border rounded-md"
               required
             />
           </div>
+        )}
 
+        <div className="space-y-2">
           <div>
-            <label className="block text-sm font-medium mb-1">카테고리</label>
-            <select
-              value={formData.category}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className="w-full px-3 py-2 border rounded-md"
-              required
-            >
-              <option value="">카테고리 선택</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
+            <span className="block text-sm font-medium">품절</span>
           </div>
-
-          {formData.category === '음료' ? (
-            <div className="space-y-4">
-              <p className="text-sm text-red-500 font-medium">* 가격을 명시한 항목만 등록됩니다</p>
-              <div className="flex space-x-4">
-                <div className="flex-1 space-y-2">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">ICE 가격</label>
-                    <input
-                      type="number"
-                      value={formData.icePrice}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        icePrice: e.target.value,
-                        isIce: e.target.value !== ''
-                      })}
-                      className="w-full px-3 py-2 border rounded-md"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex-1 space-y-2">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">HOT 가격</label>
-                    <input
-                      type="number"
-                      value={formData.hotPrice}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        hotPrice: e.target.value,
-                        isHot: e.target.value !== ''
-                      })}
-                      className="w-full px-3 py-2 border rounded-md"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <label className="block text-sm font-medium mb-1">가격</label>
-              <input
-                type="number"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
-                required
-              />
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <div>
-              <span className="block text-sm font-medium">품절</span>
-            </div>
-            <div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={formData.isSoldOut}
-                onClick={() => setFormData({ ...formData, isSoldOut: !formData.isSoldOut })}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  formData.isSoldOut ? 'bg-destructive' : 'bg-gray-200'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    formData.isSoldOut ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-2 mt-6">
+          <div>
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm bg-secondary text-secondary-foreground rounded hover:bg-secondary/90"
+              role="switch"
+              aria-checked={formData.isSoldOut}
+              onClick={() => setFormData({ ...formData, isSoldOut: !formData.isSoldOut })}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                formData.isSoldOut ? 'bg-destructive' : 'bg-gray-200'
+              }`}
             >
-              취소
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90"
-            >
-              {initialData ? '수정' : '추가'}
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  formData.isSoldOut ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
             </button>
           </div>
-        </form>
-      </div>
-    </div>,
-    document.body
+        </div>
+
+        <div className="flex justify-end space-x-2 mt-6">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm bg-secondary text-secondary-foreground rounded hover:bg-secondary/90"
+          >
+            취소
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded hover:bg-primary/90"
+          >
+            {initialData ? '수정' : '추가'}
+          </button>
+        </div>
+      </form>
+    </Modal>
   )
 } 
