@@ -229,9 +229,6 @@ export function InventoryManagement() {
 
             {item.relatedMenuIds.length > 0 && (
               <>
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-medium">연관 메뉴:</span> {getRelatedMenuNames(item.relatedMenuIds)}
-                </p>
                 <p className="text-xs text-muted-foreground">
                   <span className="font-medium">품절된 메뉴:</span> {getSoldOutCount(item.relatedMenuIds)}개 / {item.relatedMenuIds.length}개
                 </p>
