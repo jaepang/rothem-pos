@@ -186,7 +186,24 @@ export function MenuManagement() {
   return (
     <div className="space-y-6 pt-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">메뉴 관리</h2>
+        <div className="flex items-center space-x-4">
+          <h2 className="text-3xl font-bold">메뉴 관리</h2>
+          <div className="flex space-x-2 overflow-x-auto">
+            {categoryNames.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-md whitespace-nowrap ${
+                  selectedCategory === category
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
+                }`}
+              >
+                {category === 'all' ? '전체' : category}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="space-x-2">
           <button
             onClick={() => {
@@ -219,36 +236,22 @@ export function MenuManagement() {
         </div>
       </div>
 
-      <div className="flex space-x-2 overflow-x-auto pb-2">
-        {categoryNames.map((category) => (
-          <button
-            key={category}
-            onClick={() => setSelectedCategory(category)}
-            className={`px-4 py-2 rounded-md whitespace-nowrap ${
-              selectedCategory === category
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
-            }`}
-          >
-            {category === 'all' ? '전체' : category}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {displayMenus.map((menu) => (
-          <MenuCard
-            key={menu.id}
-            menu={menu}
-            onEdit={handleEditMenu}
-            onToggleSoldOut={handleToggleSoldOut}
-            onDelete={handleDeleteMenu}
-            getRelatedInventory={getRelatedInventory}
-            getInventoryNames={getInventoryNames}
-            hasAllRequiredInventory={hasAllRequiredInventory}
-            getMissingInventory={getMissingInventory}
-          />
-        ))}
+      <div className="h-[calc(100vh-12rem)] overflow-y-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {displayMenus.map((menu) => (
+            <MenuCard
+              key={menu.id}
+              menu={menu}
+              onEdit={handleEditMenu}
+              onToggleSoldOut={handleToggleSoldOut}
+              onDelete={handleDeleteMenu}
+              getRelatedInventory={getRelatedInventory}
+              getInventoryNames={getInventoryNames}
+              hasAllRequiredInventory={hasAllRequiredInventory}
+              getMissingInventory={getMissingInventory}
+            />
+          ))}
+        </div>
       </div>
 
       <MenuFormModal

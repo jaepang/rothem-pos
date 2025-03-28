@@ -199,5 +199,55 @@
     "isHot": false,
     "relatedInventoryIds": [],
     "id": "1743176931696"
+  },
+  {
+    "name": "23",
+    "price": 234,
+    "category": "케이크",
+    "isSoldOut": false,
+    "isIce": false,
+    "isHot": false,
+    "relatedInventoryIds": [],
+    "id": "1743176973439"
+  },
+  {
+    "name": "13",
+    "price": 123,
+    "category": "케이크",
+    "isSoldOut": false,
+    "isIce": false,
+    "isHot": false,
+    "relatedInventoryIds": [],
+    "id": "1743176978367"
+  },
+  {
+    "name": "333333",
+    "price": 213,
+    "category": "케이크",
+    "isSoldOut": false,
+    "isIce": false,
+    "isHot": false,
+    "relatedInventoryIds": [],
+    "id": "1743176989904"
+  },
+  {
+    "name": "22222222",
+    "price": 123,
+    "category": "케이크",
+    "isSoldOut": false,
+    "isIce": false,
+    "isHot": false,
+    "relatedInventoryIds": [],
+    "id": "1743176995024"
+  },
+  {
+    "name": "1111111111",
+    "price": 123,
+    "category": "케이크",
+    "isSoldOut": false,
+    "isIce": false,
+    "isHot": false,
+    "relatedInventoryIds": [],
+    "id": "1743177000498"
   }
 ]
