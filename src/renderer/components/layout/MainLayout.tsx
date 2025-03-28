@@ -1,6 +1,4 @@
 import React from 'react'
-import { ReactNode } from 'react'
-import treeImage from '@/assets/tree.png'
 
 type TabType = 'order' | 'menu' | 'category'
 
@@ -11,7 +9,6 @@ interface MainLayoutProps {
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children, activeTab, onTabChange }) => {
-  console.log(activeTab, onTabChange)
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
@@ -19,7 +16,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, activeTab, onTabChang
           <h1 className="text-2xl font-bold flex items-center">
             Rothem POS
             <img 
-              src={treeImage} 
+              src="/images/tree.png" 
               alt="tree" 
               className="h-[0.85em] w-auto ml-1.5 -translate-y-[1px]" 
             />
