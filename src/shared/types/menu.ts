@@ -10,6 +10,7 @@ export interface MenuItem {
   isIce?: boolean;
   isHot?: boolean;
   relatedInventoryIds?: string[];
+  order?: number;
 }
 
 export type MenuList = MenuItem[];
