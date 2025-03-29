@@ -153,7 +153,28 @@ const OrderManagement: React.FC = () => {
     ? menus
     : menus.filter(menu => menu.category === selectedCategory)
 
-  const displayMenus = filteredMenus.map(menu => {
+  // 카테고리별 메뉴 수 계산
+  const categoryCounts = menus.reduce((acc, menu) => {
+    acc[menu.category] = (acc[menu.category] || 0) + 1
+    return acc
+  }, {} as Record<string, number>)
+
+  // 카테고리를 메뉴 수 기준으로 정렬
+  const sortedCategories = Object.entries(categoryCounts)
+    .sort(([, a], [, b]) => b - a)
+    .map(([category]) => category)
+
+  // 정렬된 카테고리 순서대로 메뉴 정렬
+  const sortedMenus = [...filteredMenus].sort((a, b) => {
+    const aIndex = sortedCategories.indexOf(a.category)
+    const bIndex = sortedCategories.indexOf(b.category)
+    if (aIndex === bIndex) {
+      return a.name.localeCompare(b.name)
+    }
+    return aIndex - bIndex
+  })
+
+  const displayMenus = sortedMenus.map(menu => {
     if (menu.category === '음료') {
       const variants = []
       if (menu.isHot) {
