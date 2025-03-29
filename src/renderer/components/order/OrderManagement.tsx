@@ -172,7 +172,8 @@ const OrderManagement: React.FC = () => {
       // 품절된 메뉴 확인 (정보 제공용)
       if (menus && menus.length > 0) {
         const soldOutItems = storedOrderItems.filter(item => {
-          const currentMenu = menus.find(menu => menu.id === item.menuItem.id)
+          const originalId = getOriginalId(item.menuItem.id)
+          const currentMenu = menus.find(menu => menu.id === originalId)
           return currentMenu && currentMenu.isSoldOut
         })
         
@@ -280,18 +281,6 @@ const OrderManagement: React.FC = () => {
       const updatedMenus = [...menus]
       const firstMenu = displayMenus[selectedCardIndex]
       const secondMenu = displayMenus[index]
-      
-      // 변형 구분 (HOT/ICE)
-      const getVariant = (menuId: string) => {
-        if (menuId.endsWith('-hot')) return 'hot'
-        if (menuId.endsWith('-ice')) return 'ice'
-        return null
-      }
-      
-      // 첫 번째 선택 메뉴가 변형인지 확인
-      const firstVariant = getVariant(firstMenu.id)
-      // 두 번째 선택 메뉴가 변형인지 확인
-      const secondVariant = getVariant(secondMenu.id)
       
       // 원본 메뉴 찾기
       const firstOriginalId = getOriginalId(firstMenu.id)
@@ -402,7 +391,8 @@ const OrderManagement: React.FC = () => {
 
       // 품절된 메뉴 확인
       const soldOutItems = orderItems.filter(item => {
-        const currentMenu = menus.find(menu => menu.id === item.menuItem.id)
+        const originalId = getOriginalId(item.menuItem.id)
+        const currentMenu = menus.find(menu => menu.id === originalId)
         return currentMenu && currentMenu.isSoldOut
       })
       
@@ -523,7 +513,15 @@ const OrderManagement: React.FC = () => {
                   ) : (
                     <button
                       className="px-3 py-1.5 text-sm rounded-md bg-violet-500 text-white hover:bg-violet-600"
-                      onClick={() => setIsEditMode(true)}
+                      onClick={() => {
+                        // orderItems가 비어있지 않으면 초기화
+                        if (orderItems.length > 0) {
+                          setOrderItems([])
+                          setMemo('')
+                          clearOrderItemsFromStorage()
+                        }
+                        setIsEditMode(true)
+                      }}
                     >
                       순서 편집
                     </button>
@@ -657,7 +655,8 @@ const OrderManagement: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                       {orderItems.map(item => {
                         // 현재 메뉴 품절 상태 확인
-                        const currentMenu = menus.find(menu => menu.id === item.menuItem.id)
+                        const originalId = getOriginalId(item.menuItem.id)
+                        const currentMenu = menus.find(menu => menu.id === originalId)
                         const isSoldOut = currentMenu ? currentMenu.isSoldOut : false
                         
                         return (
@@ -721,7 +720,8 @@ const OrderManagement: React.FC = () => {
                   {/* 주문 목록에 품절된 메뉴가 있는지 확인 */}
                   {(() => {
                     const hasSoldOutItems = orderItems.some(item => {
-                      const currentMenu = menus.find(menu => menu.id === item.menuItem.id)
+                      const originalId = getOriginalId(item.menuItem.id)
+                      const currentMenu = menus.find(menu => menu.id === originalId)
                       return currentMenu && currentMenu.isSoldOut
                     })
                     
@@ -729,9 +729,9 @@ const OrderManagement: React.FC = () => {
                       <button
                         className={`w-full py-3 rounded-lg text-lg font-medium ${
                           hasSoldOutItems || isEditMode
-                            ? 'bg-gray-400 cursor-not-allowed'
+                            ? 'bg-gray-400 cursor-not-allowed text-gray-600'
                             : 'bg-blue-500 text-white hover:bg-blue-600'
-                        } ${isEditMode ? 'text-gray-600' : ''}`}
+                        }`}
                         onClick={handleCreateOrder}
                         disabled={hasSoldOutItems || isEditMode}
                         title={hasSoldOutItems ? "품절된 메뉴가 포함되어 있어 주문할 수 없습니다." : 
