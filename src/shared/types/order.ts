@@ -12,6 +12,7 @@ export interface Order {
   orderDate: string;
   completedAt?: string;
   memo?: string;
+  tableNumber?: string;
   status: 'pending' | 'completed' | 'cancelled';
   printed: boolean;
 }
