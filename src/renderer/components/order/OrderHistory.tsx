@@ -24,10 +24,10 @@ export const OrderHistory: React.FC = () => {
   } = useOrderHistory()
 
   return (
-    <div className="h-full max-h-screen overflow-y-auto overflow-x-hidden pb-10">
+    <div className="h-full pb-10">
       {/* 주문 내역 타이틀과 기간 선택 컨트롤을 한 줄에 배치 */}
-      <div className="relative flex flex-wrap items-center gap-4 bg-white p-4 mb-6">
-        <div className="flex-none flex items-center space-x-4 z-10">
+      <div className="flex flex-wrap items-center gap-4 bg-white p-4 mb-6 relative">
+        <div className="flex-none flex items-center space-x-4">
           <h2 className="text-2xl font-bold">주문 내역</h2>
           
           <div className="flex items-center space-x-2">
@@ -65,7 +65,7 @@ export const OrderHistory: React.FC = () => {
         </div>
         
         {/* 날짜 이동 버튼들을 절대 위치로 중앙에 배치 */}
-        <div className="absolute left-0 right-0 mx-auto flex justify-center items-center">
+        <div className="absolute left-0 right-0 mx-auto flex justify-center items-center z-10">
           <div className="flex items-center space-x-2">
             <button
               className="p-2 rounded-md bg-gray-200 hover:bg-gray-300"
@@ -98,7 +98,7 @@ export const OrderHistory: React.FC = () => {
           </div>
         </div>
         
-        <div className="flex-none ml-auto z-10">
+        <div className="flex-none ml-auto z-20">
           <button
             className="px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600"
             onClick={handleExportExcel}
