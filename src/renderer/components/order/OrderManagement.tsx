@@ -3,7 +3,7 @@ import { MenuItem, MenuList } from '@/shared/types/menu'
 import { Order, OrderItem } from '@/shared/types/order'
 import { loadMenuFromJson, saveMenuToJson } from '@/shared/utils/menu'
 import { initializePrinter, getPrinterStatus, printOrder } from '@/shared/utils/printer'
-import { saveOrder, getOrders, ORDERS_STORAGE_KEY } from '@/shared/utils/order'
+import { saveOrder, getOrders, loadOrdersFromFile, saveOrdersToFile } from '@/shared/utils/order'
 import { OrderCard } from './OrderCard'
 import { loadCategories } from '@/shared/utils/category'
 
@@ -160,11 +160,27 @@ const OrderManagement: React.FC = () => {
       setIsPrinterConnected(status)
     }
 
-    const loadOrders = () => {
-      const pendingOrders = getOrders('pending')
-      const completedOrders = getOrders('completed')
-      const cancelledOrders = getOrders('cancelled')
-      setOrders([...pendingOrders, ...completedOrders, ...cancelledOrders])
+    const loadOrders = async () => {
+      try {
+        // 파일 기반 주문 데이터 로드
+        const allOrders = await loadOrdersFromFile()
+        const pendingOrders = allOrders.filter(order => order.status === 'pending')
+        const completedOrders = allOrders.filter(order => order.status === 'completed')
+        const cancelledOrders = allOrders.filter(order => order.status === 'cancelled')
+        setOrders([...pendingOrders, ...completedOrders, ...cancelledOrders])
+      } catch (error) {
+        console.error('주문 데이터 로딩 실패:', error)
+        // 폴백으로 이전 방식 사용
+        try {
+          const pendingOrders = await getOrders('pending')
+          const completedOrders = await getOrders('completed')
+          const cancelledOrders = await getOrders('cancelled')
+          setOrders([...pendingOrders, ...completedOrders, ...cancelledOrders])
+        } catch (fallbackError) {
+          console.error('주문 데이터 폴백 로딩 실패:', fallbackError)
+          setOrders([])
+        }
+      }
     }
 
     loadMenus()
