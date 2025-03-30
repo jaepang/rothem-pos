@@ -18,11 +18,15 @@ export function MenuManagement() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [loadedMenus, loadedCategories, loadedInventory] = await Promise.all([
-        loadMenuFromJson(),
-        loadCategories(),
+      // 먼저 메뉴를 불러옵니다
+      const loadedMenus = await loadMenuFromJson()
+      
+      // 메뉴 목록을 loadCategories에 전달하여 필요한 카테고리를 생성합니다
+      const [loadedCategories, loadedInventory] = await Promise.all([
+        loadCategories(loadedMenus),
         loadInventoryFromJson()
       ])
+      
       setMenus(loadedMenus)
       setCategories(loadedCategories)
       setInventory(loadedInventory)

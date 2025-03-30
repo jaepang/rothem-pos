@@ -1,12 +1,13 @@
 import { Category, CategoryList } from '@/shared/types/menu'
 import { readFile, writeFile } from '@/shared/utils/file'
+import type { MenuItem, MenuList } from '@/shared/types/menu'
 
 const CATEGORY_FILE_PATH = 'categories.json'
 
-export async function loadCategories(): Promise<CategoryList> {
+export async function loadCategories(menuList?: MenuList): Promise<CategoryList> {
   try {
     const data = await readFile(CATEGORY_FILE_PATH)
-    const categories = JSON.parse(data) as CategoryList
+    let categories = JSON.parse(data) as CategoryList
     
     // '음료' 카테고리가 없으면 추가
     if (!categories.some(category => category.name === '음료')) {
@@ -18,6 +19,32 @@ export async function loadCategories(): Promise<CategoryList> {
       await saveCategories(categories)
     }
     
+    // 메뉴 목록이 제공된 경우, 목록에 있는 모든 카테고리를 검사하고 없는 카테고리 추가
+    if (menuList && menuList.length > 0) {
+      const existingCategoryNames = new Set(categories.map(cat => cat.name))
+      const menuCategories = new Set(menuList.map(menu => menu.category))
+      
+      // 카테고리 목록에 없는 메뉴 카테고리 찾기
+      const missingCategories: string[] = []
+      menuCategories.forEach(categoryName => {
+        if (!existingCategoryNames.has(categoryName)) {
+          missingCategories.push(categoryName)
+        }
+      })
+      
+      // 누락된 카테고리가 있으면 추가
+      if (missingCategories.length > 0) {
+        for (const categoryName of missingCategories) {
+          categories.push({
+            id: crypto.randomUUID(),
+            name: categoryName,
+            order: categories.length
+          })
+        }
+        await saveCategories(categories)
+      }
+    }
+    
     return categories
   } catch {
     // 파일이 없는 경우 '음료' 카테고리만 포함하여 반환
@@ -26,6 +53,23 @@ export async function loadCategories(): Promise<CategoryList> {
       name: '음료',
       order: 0
     }]
+    
+    // 메뉴 목록이 제공된 경우 추가 카테고리 생성
+    if (menuList && menuList.length > 0) {
+      const defaultCategoryNames = new Set(['음료'])
+      const menuCategories = new Set(menuList.map(menu => menu.category))
+      
+      menuCategories.forEach(categoryName => {
+        if (!defaultCategoryNames.has(categoryName)) {
+          defaultCategories.push({
+            id: crypto.randomUUID(),
+            name: categoryName,
+            order: defaultCategories.length
+          })
+        }
+      })
+    }
+    
     await saveCategories(defaultCategories)
     return defaultCategories
   }

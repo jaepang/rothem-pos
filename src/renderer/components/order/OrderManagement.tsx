@@ -5,6 +5,7 @@ import { loadMenuFromJson, saveMenuToJson } from '@/shared/utils/menu'
 import { initializePrinter, getPrinterStatus, printOrder } from '@/shared/utils/printer'
 import { saveOrder, getOrders, ORDERS_STORAGE_KEY } from '@/shared/utils/order'
 import { OrderCard } from './OrderCard'
+import { loadCategories } from '@/shared/utils/category'
 
 // localStorage 키 상수
 const ORDER_ITEMS_STORAGE_KEY = 'orderItems'
@@ -90,6 +91,9 @@ const OrderManagement: React.FC = () => {
   useEffect(() => {
     const loadMenus = async () => {
       const loadedMenus = await loadMenuFromJson()
+      
+      // 메뉴 목록을 loadCategories에 전달하여 필요한 카테고리를 생성합니다
+      await loadCategories(loadedMenus)
       
       // 불러온 메뉴에 order 필드 유무 확인
       const hasOrderField = loadedMenus.some(menu => 'order' in menu)

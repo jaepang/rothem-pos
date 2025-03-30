@@ -12,10 +12,10 @@ export function CategoryManagement() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [loadedCategories, loadedMenus] = await Promise.all([
-        loadCategories(),
-        loadMenuFromJson()
-      ])
+      const loadedMenus = await loadMenuFromJson()
+      
+      const loadedCategories = await loadCategories(loadedMenus)
+      
       setCategories(loadedCategories)
       setMenus(loadedMenus)
     }
