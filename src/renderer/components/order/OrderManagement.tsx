@@ -88,6 +88,15 @@ const OrderManagement: React.FC = () => {
     }
   }
 
+  // 오늘 날짜인지 확인하는 함수
+  const isToday = (dateString: string): boolean => {
+    const date = new Date(dateString);
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
+  }
+
   useEffect(() => {
     const loadMenus = async () => {
       const loadedMenus = await loadMenuFromJson()
@@ -442,7 +451,6 @@ const OrderManagement: React.FC = () => {
       setOrderItems([])
       setMemo('')
       clearOrderItemsFromStorage()
-      alert('주문이 등록되었습니다.')
     } catch (error) {
       console.error('주문 등록 실패:', error)
       alert('주문 등록에 실패했습니다.')
@@ -587,8 +595,8 @@ const OrderManagement: React.FC = () => {
                         <div className="text-gray-600">{menu.price.toLocaleString()}원</div>
                         {isSelected && selectedItem && !isEditMode && (
                           <div className="flex items-center gap-2">
-                            <button
-                              className="w-6 h-6 flex items-center justify-center bg-blue-100 rounded-full hover:bg-blue-200 text-blue-600"
+                            <div
+                              className="w-6 h-6 flex items-center justify-center bg-blue-100 rounded-full hover:bg-blue-200 text-blue-600 cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handleUpdateQuantity(
@@ -600,10 +608,10 @@ const OrderManagement: React.FC = () => {
                               }}
                             >
                               -
-                            </button>
+                            </div>
                             <span className="w-6 text-center text-blue-600 font-medium">{selectedItem.quantity}</span>
-                            <button
-                              className="w-6 h-6 flex items-center justify-center bg-blue-100 rounded-full hover:bg-blue-200 text-blue-600"
+                            <div
+                              className="w-6 h-6 flex items-center justify-center bg-blue-100 rounded-full hover:bg-blue-200 text-blue-600 cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handleUpdateQuantity(
@@ -613,10 +621,11 @@ const OrderManagement: React.FC = () => {
                                   selectedItem.quantity + 1
                                 )
                               }}
-                              disabled={menu.isSoldOut}
+                              aria-disabled={menu.isSoldOut}
+                              style={menu.isSoldOut ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                             >
                               +
-                            </button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -676,8 +685,8 @@ const OrderManagement: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-3 shrink-0">
                               <span className="text-gray-600">{item.menuItem.price.toLocaleString()}원</span>
-                              <button
-                                className="w-7 h-7 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
+                              <div
+                                className="w-7 h-7 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300 cursor-pointer"
                                 onClick={() =>
                                   handleUpdateQuantity(
                                     item.menuItem.id,
@@ -688,10 +697,10 @@ const OrderManagement: React.FC = () => {
                                 }
                               >
                                 -
-                              </button>
+                              </div>
                               <span className="w-8 text-center font-medium">{item.quantity}</span>
-                              <button
-                                className="w-7 h-7 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300"
+                              <div
+                                className="w-7 h-7 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300 cursor-pointer"
                                 onClick={() =>
                                   handleUpdateQuantity(
                                     item.menuItem.id,
@@ -700,10 +709,11 @@ const OrderManagement: React.FC = () => {
                                     item.quantity + 1
                                   )
                                 }
-                                disabled={isSoldOut}
+                                aria-disabled={isSoldOut}
+                                style={isSoldOut ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                               >
                                 +
-                              </button>
+                              </div>
                             </div>
                           </div>
                         )
@@ -774,7 +784,7 @@ const OrderManagement: React.FC = () => {
           </div>
           <div className="space-y-2 pb-6">
             {orders
-              .filter(order => order.status === 'pending')
+              .filter(order => order.status === 'pending' && isToday(order.orderDate))
               .map(order => (
                 <OrderCard
                   key={order.id}
@@ -783,7 +793,7 @@ const OrderManagement: React.FC = () => {
                   onCancel={handleCancelOrder}
                 />
               ))}
-            {orders.filter(order => order.status === 'pending').length === 0 && (
+            {orders.filter(order => order.status === 'pending' && isToday(order.orderDate)).length === 0 && (
               <div className="text-center py-4 text-gray-500">
                 처리중인 주문이 없습니다
               </div>
@@ -800,7 +810,10 @@ const OrderManagement: React.FC = () => {
             </div>
             <div className="space-y-2 pb-6">
               {orders
-                .filter(order => order.status === 'completed' || order.status === 'cancelled')
+                .filter(order => 
+                  (order.status === 'completed' || order.status === 'cancelled') && 
+                  isToday(order.status === 'completed' && order.completedAt ? order.completedAt : order.orderDate)
+                )
                 .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
                 .map(order => (
                   <OrderCard
@@ -812,7 +825,8 @@ const OrderManagement: React.FC = () => {
                   />
                 ))}
               {orders.filter(order => 
-                order.status === 'completed' || order.status === 'cancelled'
+                (order.status === 'completed' || order.status === 'cancelled') && 
+                isToday(order.status === 'completed' && order.completedAt ? order.completedAt : order.orderDate)
               ).length === 0 && (
                 <div className="text-center py-4 text-gray-500">
                   완료된 주문이 없습니다
