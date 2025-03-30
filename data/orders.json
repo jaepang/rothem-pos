@@ -1,0 +1,659 @@
+[
+  {
+    "id": "1743314345267",
+    "items": [
+      {
+        "menuItem": {
+          "name": "치즈케이크",
+          "price": 6000,
+          "category": "케이크",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": false,
+          "isHot": false,
+          "imageUrl": "",
+          "id": "1743053983791",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 18,
+          "displayName": "치즈케이크"
+        },
+        "quantity": 1
+      },
+      {
+        "menuItem": {
+          "name": "카페라떼",
+          "price": 3000,
+          "icePrice": 3500,
+          "hotPrice": 3000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isIce": false,
+          "isHot": true,
+          "id": "1743139712821-hot",
+          "relatedInventoryIds": [
+            "1743139406074",
+            "1743139742016"
+          ],
+          "order": 220,
+          "displayName": "카페라떼 (HOT)"
+        },
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 9000,
+    "orderDate": "2025-03-30T05:59:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-03-30T06:10:05.267Z"
+  },
+  {
+    "id": "1743314345268",
+    "items": [
+      {
+        "menuItem": {
+          "name": "아메리카노",
+          "price": 2500,
+          "icePrice": 2500,
+          "hotPrice": 2000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": true,
+          "isHot": false,
+          "imageUrl": "",
+          "id": "1743053489723-ice",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 19,
+          "displayName": "아메리카노 (ICE)"
+        },
+        "quantity": 2
+      }
+    ],
+    "totalAmount": 5000,
+    "orderDate": "2025-03-30T04:30:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-03-30T04:45:05.267Z"
+  },
+  {
+    "id": "1743314345269",
+    "items": [
+      {
+        "menuItem": {
+          "name": "치즈케이크",
+          "price": 6000,
+          "category": "케이크",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": false,
+          "isHot": false,
+          "imageUrl": "",
+          "id": "1743053983791",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 18,
+          "displayName": "치즈케이크"
+        },
+        "quantity": 3
+      }
+    ],
+    "totalAmount": 18000,
+    "orderDate": "2025-03-30T01:15:05.267Z",
+    "status": "cancelled",
+    "printed": false
+  },
+  {
+    "id": "1743314345270",
+    "items": [
+      {
+        "menuItem": {
+          "name": "오렌지주스",
+          "price": 3000,
+          "icePrice": 3000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": true,
+          "isHot": false,
+          "imageUrl": "",
+          "id": "1743054016635-ice",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 20,
+          "displayName": "오렌지주스 (ICE)"
+        },
+        "quantity": 1
+      },
+      {
+        "menuItem": {
+          "name": "치즈케이크",
+          "price": 6000,
+          "category": "케이크",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": false,
+          "isHot": false,
+          "imageUrl": "",
+          "id": "1743053983791",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 18,
+          "displayName": "치즈케이크"
+        },
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 9000,
+    "orderDate": "2025-03-29T14:45:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-03-29T15:00:05.267Z"
+  },
+  {
+    "id": "1743314345271",
+    "items": [
+      {
+        "menuItem": {
+          "name": "자몽에이드",
+          "price": 5000,
+          "icePrice": 5000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isIce": true,
+          "isHot": false,
+          "id": "1743053951598-ice",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 21,
+          "displayName": "자몽에이드 (ICE)"
+        },
+        "quantity": 2
+      },
+      {
+        "menuItem": {
+          "name": "아메리카노",
+          "price": 2000,
+          "icePrice": 2500,
+          "hotPrice": 2000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": false,
+          "isHot": true,
+          "imageUrl": "",
+          "id": "1743053489723-hot",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 19,
+          "displayName": "아메리카노 (HOT)"
+        },
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 12000,
+    "orderDate": "2025-03-28T10:30:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-03-28T10:45:05.267Z"
+  },
+  {
+    "id": "1743314345272",
+    "items": [
+      {
+        "menuItem": {
+          "name": "카페라떼",
+          "price": 3500,
+          "icePrice": 3500,
+          "hotPrice": 3000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isIce": true,
+          "isHot": false,
+          "id": "1743139712821-ice",
+          "relatedInventoryIds": [
+            "1743139406074",
+            "1743139742016"
+          ],
+          "order": 220,
+          "displayName": "카페라떼 (ICE)"
+        },
+        "quantity": 3
+      }
+    ],
+    "totalAmount": 10500,
+    "orderDate": "2025-03-28T09:20:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-03-28T09:35:05.267Z"
+  },
+  {
+    "id": "1743314345273",
+    "items": [
+      {
+        "menuItem": {
+          "name": "아메리카노",
+          "price": 2000,
+          "icePrice": 2500,
+          "hotPrice": 2000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": false,
+          "isHot": true,
+          "imageUrl": "",
+          "id": "1743053489723-hot",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 19,
+          "displayName": "아메리카노 (HOT)"
+        },
+        "quantity": 4
+      }
+    ],
+    "totalAmount": 8000,
+    "orderDate": "2025-03-27T16:50:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-03-27T17:05:05.267Z"
+  },
+  {
+    "id": "1743314345274",
+    "items": [
+      {
+        "menuItem": {
+          "name": "치즈케이크",
+          "price": 6000,
+          "category": "케이크",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": false,
+          "isHot": false,
+          "imageUrl": "",
+          "id": "1743053983791",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 18,
+          "displayName": "치즈케이크"
+        },
+        "quantity": 2
+      },
+      {
+        "menuItem": {
+          "name": "카페라떼",
+          "price": 3000,
+          "icePrice": 3500,
+          "hotPrice": 3000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isIce": false,
+          "isHot": true,
+          "id": "1743139712821-hot",
+          "relatedInventoryIds": [
+            "1743139406074",
+            "1743139742016"
+          ],
+          "order": 220,
+          "displayName": "카페라떼 (HOT)"
+        },
+        "quantity": 2
+      }
+    ],
+    "totalAmount": 18000,
+    "orderDate": "2025-03-27T14:10:05.267Z",
+    "status": "cancelled",
+    "printed": false
+  },
+  {
+    "id": "1743314345275",
+    "items": [
+      {
+        "menuItem": {
+          "name": "자몽에이드",
+          "price": 5000,
+          "icePrice": 5000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isIce": true,
+          "isHot": false,
+          "id": "1743053951598-ice",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 21,
+          "displayName": "자몽에이드 (ICE)"
+        },
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 5000,
+    "orderDate": "2025-03-26T11:30:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-03-26T11:45:05.267Z"
+  },
+  {
+    "id": "1743314345276",
+    "items": [
+      {
+        "menuItem": {
+          "name": "오렌지주스",
+          "price": 3000,
+          "icePrice": 3000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": true,
+          "isHot": false,
+          "imageUrl": "",
+          "id": "1743054016635-ice",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 20,
+          "displayName": "오렌지주스 (ICE)"
+        },
+        "quantity": 2
+      },
+      {
+        "menuItem": {
+          "name": "치즈케이크",
+          "price": 6000,
+          "category": "케이크",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": false,
+          "isHot": false,
+          "imageUrl": "",
+          "id": "1743053983791",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 18,
+          "displayName": "치즈케이크"
+        },
+        "quantity": 1
+      }
+    ],
+    "totalAmount": 12000,
+    "orderDate": "2025-03-25T09:15:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-03-25T09:30:05.267Z"
+  },
+  {
+    "id": "1743314345277",
+    "items": [
+      {
+        "menuItem": {
+          "name": "카페라떼",
+          "price": 3000,
+          "icePrice": 3500,
+          "hotPrice": 3000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isIce": false,
+          "isHot": true,
+          "id": "1743139712821-hot",
+          "relatedInventoryIds": [
+            "1743139406074",
+            "1743139742016"
+          ],
+          "order": 220,
+          "displayName": "카페라떼 (HOT)"
+        },
+        "quantity": 5
+      }
+    ],
+    "totalAmount": 15000,
+    "orderDate": "2025-03-24T15:45:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-03-24T16:00:05.267Z"
+  },
+  {
+    "id": "1743314345278",
+    "items": [
+      {
+        "menuItem": {
+          "name": "아메리카노",
+          "price": 2500,
+          "icePrice": 2500,
+          "hotPrice": 2000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": true,
+          "isHot": false,
+          "imageUrl": "",
+          "id": "1743053489723-ice",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 19,
+          "displayName": "아메리카노 (ICE)"
+        },
+        "quantity": 3
+      },
+      {
+        "menuItem": {
+          "name": "치즈케이크",
+          "price": 6000,
+          "category": "케이크",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": false,
+          "isHot": false,
+          "imageUrl": "",
+          "id": "1743053983791",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 18,
+          "displayName": "치즈케이크"
+        },
+        "quantity": 2
+      }
+    ],
+    "totalAmount": 19500,
+    "orderDate": "2025-03-23T12:10:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-03-23T12:25:05.267Z"
+  },
+  {
+    "id": "1743314345279",
+    "items": [
+      {
+        "menuItem": {
+          "name": "자몽에이드",
+          "price": 5000,
+          "icePrice": 5000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isIce": true,
+          "isHot": false,
+          "id": "1743053951598-ice",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 21,
+          "displayName": "자몽에이드 (ICE)"
+        },
+        "quantity": 4
+      }
+    ],
+    "totalAmount": 20000,
+    "orderDate": "2025-03-01T10:30:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-03-01T10:45:05.267Z"
+  },
+  {
+    "id": "1743314345280",
+    "items": [
+      {
+        "menuItem": {
+          "name": "오렌지주스",
+          "price": 3000,
+          "icePrice": 3000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": true,
+          "isHot": false,
+          "imageUrl": "",
+          "id": "1743054016635-ice",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 20,
+          "displayName": "오렌지주스 (ICE)"
+        },
+        "quantity": 6
+      }
+    ],
+    "totalAmount": 18000,
+    "orderDate": "2025-02-28T16:20:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-02-28T16:35:05.267Z"
+  },
+  {
+    "id": "1743314345281",
+    "items": [
+      {
+        "menuItem": {
+          "name": "치즈케이크",
+          "price": 6000,
+          "category": "케이크",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": false,
+          "isHot": false,
+          "imageUrl": "",
+          "id": "1743053983791",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 18,
+          "displayName": "치즈케이크"
+        },
+        "quantity": 2
+      },
+      {
+        "menuItem": {
+          "name": "아메리카노",
+          "price": 2000,
+          "icePrice": 2500,
+          "hotPrice": 2000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": false,
+          "isHot": true,
+          "imageUrl": "",
+          "id": "1743053489723-hot",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 19,
+          "displayName": "아메리카노 (HOT)"
+        },
+        "quantity": 2
+      }
+    ],
+    "totalAmount": 16000,
+    "orderDate": "2025-02-15T11:05:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-02-15T11:20:05.267Z"
+  },
+  {
+    "id": "1743314345282",
+    "items": [
+      {
+        "menuItem": {
+          "name": "카페라떼",
+          "price": 3500,
+          "icePrice": 3500,
+          "hotPrice": 3000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isIce": true,
+          "isHot": false,
+          "id": "1743139712821-ice",
+          "relatedInventoryIds": [
+            "1743139406074",
+            "1743139742016"
+          ],
+          "order": 220,
+          "displayName": "카페라떼 (ICE)"
+        },
+        "quantity": 3
+      },
+      {
+        "menuItem": {
+          "name": "자몽에이드",
+          "price": 5000,
+          "icePrice": 5000,
+          "category": "음료",
+          "isSoldOut": false,
+          "isIce": true,
+          "isHot": false,
+          "id": "1743053951598-ice",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 21,
+          "displayName": "자몽에이드 (ICE)"
+        },
+        "quantity": 2
+      }
+    ],
+    "totalAmount": 20500,
+    "orderDate": "2025-02-01T14:30:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-02-01T14:45:05.267Z"
+  },
+  {
+    "id": "1743314345283",
+    "items": [
+      {
+        "menuItem": {
+          "name": "치즈케이크",
+          "price": 6000,
+          "category": "케이크",
+          "isSoldOut": false,
+          "isFavorite": false,
+          "isIce": false,
+          "isHot": false,
+          "imageUrl": "",
+          "id": "1743053983791",
+          "relatedInventoryIds": [
+            "1743139406074"
+          ],
+          "order": 18,
+          "displayName": "치즈케이크"
+        },
+        "quantity": 4
+      }
+    ],
+    "totalAmount": 24000,
+    "orderDate": "2025-01-15T09:45:05.267Z",
+    "status": "completed",
+    "printed": true,
+    "completedAt": "2025-01-15T10:00:05.267Z"
+  }
+]
