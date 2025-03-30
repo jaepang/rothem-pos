@@ -325,6 +325,15 @@ export const useOrderHistory = () => {
         bbChart.current.destroy();
       }
 
+      // CSS 스타일 추가
+      const styleEl = document.createElement('style');
+      styleEl.textContent = `
+        .bb-line {
+          stroke-width: 2px !important;
+        }
+      `;
+      document.head.appendChild(styleEl);
+
       // 차트 데이터가 있을 때
       if (chartData.length > 0) {
         // x축 카테고리 및 데이터 값 준비
@@ -355,7 +364,7 @@ export const useOrderHistory = () => {
           },
           line: {
             // @ts-ignore
-            width: 2
+            width: 4
           },
           axis: {
             x: {
