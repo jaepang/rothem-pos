@@ -148,6 +148,8 @@ export const useOrderHistory = () => {
   const movePeriod = (direction: 'prev' | 'next' | 'today') => {
     if (direction === 'today') {
       setSelectedDate(new Date())
+      // 오늘 버튼 클릭 시 즉시 데이터 로드
+      setTimeout(() => loadOrders(), 0)
       return
     }
     

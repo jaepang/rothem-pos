@@ -24,17 +24,17 @@ export const OrderHistory: React.FC = () => {
   } = useOrderHistory()
 
   return (
-    <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-6">주문 내역</h2>
-      
-      {/* 기간 선택 컨트롤 */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="h-full max-h-screen overflow-y-auto overflow-x-hidden pb-10">
+      {/* 주문 내역 타이틀과 기간 선택 컨트롤을 한 줄에 배치 */}
+      <div className="relative flex flex-wrap items-center gap-4 bg-white p-4 mb-6">
+        <div className="flex-none flex items-center space-x-4 z-10">
+          <h2 className="text-2xl font-bold">주문 내역</h2>
+          
           <div className="flex items-center space-x-2">
             <button
-              className={`px-4 py-2 rounded-md ${
+              className={`px-3 py-1.5 rounded-md ${
                 periodType === 'day'
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-black text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
               onClick={() => setPeriodType('day')}
@@ -42,9 +42,9 @@ export const OrderHistory: React.FC = () => {
               일별
             </button>
             <button
-              className={`px-4 py-2 rounded-md ${
+              className={`px-3 py-1.5 rounded-md ${
                 periodType === 'week'
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-black text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
               onClick={() => setPeriodType('week')}
@@ -52,9 +52,9 @@ export const OrderHistory: React.FC = () => {
               주별
             </button>
             <button
-              className={`px-4 py-2 rounded-md ${
+              className={`px-3 py-1.5 rounded-md ${
                 periodType === 'month'
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-black text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
               onClick={() => setPeriodType('month')}
@@ -62,7 +62,10 @@ export const OrderHistory: React.FC = () => {
               월별
             </button>
           </div>
-          
+        </div>
+        
+        {/* 날짜 이동 버튼들을 절대 위치로 중앙에 배치 */}
+        <div className="absolute left-0 right-0 mx-auto flex justify-center items-center">
           <div className="flex items-center space-x-2">
             <button
               className="p-2 rounded-md bg-gray-200 hover:bg-gray-300"
@@ -87,15 +90,17 @@ export const OrderHistory: React.FC = () => {
               </svg>
             </button>
             <button
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 ml-4"
+              className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 ml-2"
               onClick={() => movePeriod('today')}
             >
               오늘
             </button>
           </div>
-          
+        </div>
+        
+        <div className="flex-none ml-auto z-10">
           <button
-            className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+            className="px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600"
             onClick={handleExportExcel}
           >
             엑셀 내보내기
