@@ -58,6 +58,7 @@ ipcMain.handle('fs:deleteImage', async (_, imageUrl: string) => {
 
 const MENU_FILE_PATH = path.join(process.cwd(), 'data', 'menu.json')
 const INVENTORY_FILE_PATH = path.join(process.cwd(), 'data', 'inventory.json')
+const ORDERS_FILE_PATH = path.join(process.cwd(), 'data', 'orders.json')
 
 // IPC 핸들러 등록
 ipcMain.handle('menu:loadFromJson', async () => {
@@ -110,6 +111,36 @@ ipcMain.handle('inventory:saveToJson', async (_, inventoryList) => {
   } catch (error) {
     console.error('재고 데이터 저장 실패:', error)
     throw error
+  }
+})
+
+// 주문 관련 IPC 핸들러
+ipcMain.handle('orders:loadFromJson', async () => {
+  try {
+    if (!fs_sync.existsSync(ORDERS_FILE_PATH)) {
+      // 주문 파일이 존재하지 않으면 빈 배열 반환
+      await fs.writeFile(ORDERS_FILE_PATH, JSON.stringify([], null, 2))
+      return []
+    }
+    const data = await fs.readFile(ORDERS_FILE_PATH, 'utf-8')
+    return JSON.parse(data)
+  } catch (error) {
+    console.error('주문 데이터 로드 실패:', error)
+    return []
+  }
+})
+
+ipcMain.handle('orders:saveToJson', async (_, orders) => {
+  try {
+    const dirPath = path.dirname(ORDERS_FILE_PATH)
+    if (!fs_sync.existsSync(dirPath)) {
+      await fs.mkdir(dirPath, { recursive: true })
+    }
+    await fs.writeFile(ORDERS_FILE_PATH, JSON.stringify(orders, null, 2))
+    return true
+  } catch (error) {
+    console.error('주문 데이터 저장 실패:', error)
+    return false
   }
 })
 

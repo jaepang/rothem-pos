@@ -28,6 +28,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveInventoryToJson: (inventoryList: any) => 
       ipcRenderer.invoke('inventory:saveToJson', inventoryList),
   },
+  orders: {
+    loadOrdersFromJson: () => 
+      ipcRenderer.invoke('orders:loadFromJson'),
+    saveOrdersToJson: (orders: any) => 
+      ipcRenderer.invoke('orders:saveToJson', orders),
+  },
   printer: {
     initialize: () => 
       ipcRenderer.invoke('printer:initialize'),

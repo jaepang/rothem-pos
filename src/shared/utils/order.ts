@@ -13,47 +13,219 @@ interface ExcelOrder {
   메모: string;
 }
 
-export const ORDERS_STORAGE_KEY = 'pos_orders'
+// 상수
+export const ORDERS_STORAGE_KEY = 'pos_orders' // 하위 호환성을 위해 유지
 
-export const saveOrder = (order: Order): void => {
-  const ordersJson = localStorage.getItem(ORDERS_STORAGE_KEY)
-  const allOrders = ordersJson ? JSON.parse(ordersJson) : []
-  
-  const existingOrderIndex = allOrders.findIndex((o: Order) => o.id === order.id)
-  if (existingOrderIndex >= 0) {
-    // 기존 주문 업데이트
-    allOrders[existingOrderIndex] = order
-  } else {
-    // 새 주문 추가
-    allOrders.push(order)
+// 파일에서 주문 목록 불러오기
+export const loadOrdersFromFile = async (): Promise<OrderList> => {
+  try {
+    return await window.electronAPI.orders.loadOrdersFromJson()
+  } catch (error) {
+    console.error('주문 데이터 불러오기 실패:', error)
+    
+    // 폴백: localStorage에서 시도
+    try {
+      const ordersJson = localStorage.getItem(ORDERS_STORAGE_KEY)
+      return ordersJson ? JSON.parse(ordersJson) : []
+    } catch (localError) {
+      console.error('localStorage 주문 데이터 불러오기 실패:', localError)
+      return []
+    }
   }
-  
-  localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(allOrders))
 }
 
-export const getOrders = (status?: 'pending' | 'completed' | 'cancelled'): OrderList => {
-  const ordersJson = localStorage.getItem(ORDERS_STORAGE_KEY)
-  const allOrders = ordersJson ? JSON.parse(ordersJson) : []
-  
-  if (!status) return allOrders
-  
-  return allOrders.filter((order: Order) => order.status === status)
+// 파일에 주문 목록 저장하기
+export const saveOrdersToFile = async (orders: OrderList): Promise<void> => {
+  try {
+    await window.electronAPI.orders.saveOrdersToJson(orders)
+  } catch (error) {
+    console.error('주문 데이터 저장 실패:', error)
+  }
 }
 
-export const updateOrderStatus = (orderId: string, status: 'pending' | 'completed'): void => {
-  const orders = getOrders()
-  const updatedOrders = orders.map(order => 
-    order.id === orderId ? { ...order, status } : order
-  )
-  localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updatedOrders))
+// 단일 주문 저장 (이전 주문과 병합)
+export const saveOrder = async (order: Order): Promise<void> => {
+  try {
+    // 파일에서 주문 목록 불러오기
+    const allOrders = await loadOrdersFromFile()
+    
+    const existingOrderIndex = allOrders.findIndex((o: Order) => o.id === order.id)
+    if (existingOrderIndex >= 0) {
+      // 기존 주문 업데이트
+      allOrders[existingOrderIndex] = order
+    } else {
+      // 새 주문 추가
+      allOrders.push(order)
+    }
+    
+    // 파일에 저장
+    await saveOrdersToFile(allOrders)
+    
+    // localStorage 하위 호환성 유지
+    try {
+      const localStorageOrders = localStorage.getItem(ORDERS_STORAGE_KEY)
+      const parsedOrders = localStorageOrders ? JSON.parse(localStorageOrders) : []
+      
+      const localExistingOrderIndex = parsedOrders.findIndex((o: Order) => o.id === order.id)
+      if (localExistingOrderIndex >= 0) {
+        parsedOrders[localExistingOrderIndex] = order
+      } else {
+        parsedOrders.push(order)
+      }
+      
+      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(parsedOrders))
+    } catch (error) {
+      console.error('localStorage 주문 저장 실패:', error)
+    }
+  } catch (error) {
+    console.error('주문 저장 실패:', error)
+    
+    // 폴백: localStorage에만 저장
+    try {
+      const ordersJson = localStorage.getItem(ORDERS_STORAGE_KEY)
+      const localOrders = ordersJson ? JSON.parse(ordersJson) : []
+      
+      const existingOrderIndex = localOrders.findIndex((o: Order) => o.id === order.id)
+      if (existingOrderIndex >= 0) {
+        localOrders[existingOrderIndex] = order
+      } else {
+        localOrders.push(order)
+      }
+      
+      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(localOrders))
+    } catch (localError) {
+      console.error('localStorage 폴백 저장 실패:', localError)
+    }
+  }
 }
 
-export const updateOrderPrintStatus = (orderId: string, printed: boolean): void => {
-  const orders = getOrders()
-  const updatedOrders = orders.map(order => 
-    order.id === orderId ? { ...order, printed } : order
-  )
-  localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updatedOrders))
+// 주문 목록 가져오기 (상태별 필터링 지원)
+export const getOrders = async (status?: 'pending' | 'completed' | 'cancelled'): Promise<OrderList> => {
+  try {
+    const allOrders = await loadOrdersFromFile()
+    
+    if (!status) return allOrders
+    
+    return allOrders.filter((order: Order) => order.status === status)
+  } catch (error) {
+    console.error('주문 목록 불러오기 실패:', error)
+    return []
+  }
+}
+
+// 주문 상태 업데이트
+export const updateOrderStatus = async (orderId: string, status: 'pending' | 'completed' | 'cancelled'): Promise<void> => {
+  try {
+    const orders = await loadOrdersFromFile()
+    const updatedOrders = orders.map(order => 
+      order.id === orderId ? { ...order, status } : order
+    )
+    await saveOrdersToFile(updatedOrders)
+    
+    // localStorage 하위 호환성 유지
+    try {
+      const localStorageOrders = localStorage.getItem(ORDERS_STORAGE_KEY)
+      if (localStorageOrders) {
+        const parsedOrders = JSON.parse(localStorageOrders)
+        const updatedLocalOrders = parsedOrders.map((order: Order) => 
+          order.id === orderId ? { ...order, status } : order
+        )
+        localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updatedLocalOrders))
+      }
+    } catch (error) {
+      console.error('localStorage 주문 상태 업데이트 실패:', error)
+    }
+  } catch (error) {
+    console.error('주문 상태 업데이트 실패:', error)
+  }
+}
+
+// 주문 출력 상태 업데이트
+export const updateOrderPrintStatus = async (orderId: string, printed: boolean): Promise<void> => {
+  try {
+    const orders = await loadOrdersFromFile()
+    const updatedOrders = orders.map(order => 
+      order.id === orderId ? { ...order, printed } : order
+    )
+    await saveOrdersToFile(updatedOrders)
+    
+    // localStorage 하위 호환성 유지
+    try {
+      const localStorageOrders = localStorage.getItem(ORDERS_STORAGE_KEY)
+      if (localStorageOrders) {
+        const parsedOrders = JSON.parse(localStorageOrders)
+        const updatedLocalOrders = parsedOrders.map((order: Order) => 
+          order.id === orderId ? { ...order, printed } : order
+        )
+        localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updatedLocalOrders))
+      }
+    } catch (error) {
+      console.error('localStorage 주문 출력 상태 업데이트 실패:', error)
+    }
+  } catch (error) {
+    console.error('주문 출력 상태 업데이트 실패:', error)
+  }
+}
+
+// 날짜별 주문 가져오기
+export const getOrdersByDate = async (date: Date): Promise<OrderList> => {
+  try {
+    const orders = await loadOrdersFromFile()
+    const targetDate = new Date(date)
+    targetDate.setHours(0, 0, 0, 0)
+    
+    return orders.filter(order => {
+      const orderDate = new Date(order.orderDate)
+      orderDate.setHours(0, 0, 0, 0)
+      return orderDate.getTime() === targetDate.getTime()
+    })
+  } catch (error) {
+    console.error('날짜별 주문 목록 불러오기 실패:', error)
+    return []
+  }
+}
+
+// 주간 주문 가져오기
+export const getOrdersByWeek = async (date: Date): Promise<OrderList> => {
+  try {
+    const orders = await loadOrdersFromFile()
+    const targetDate = new Date(date)
+    
+    // 주의 시작일(일요일) 구하기
+    const startOfWeek = new Date(targetDate)
+    startOfWeek.setDate(targetDate.getDate() - targetDate.getDay())
+    startOfWeek.setHours(0, 0, 0, 0)
+    
+    // 주의 종료일(토요일) 구하기
+    const endOfWeek = new Date(startOfWeek)
+    endOfWeek.setDate(startOfWeek.getDate() + 6)
+    endOfWeek.setHours(23, 59, 59, 999)
+    
+    return orders.filter(order => {
+      const orderDate = new Date(order.orderDate)
+      return orderDate >= startOfWeek && orderDate <= endOfWeek
+    })
+  } catch (error) {
+    console.error('주간 주문 목록 불러오기 실패:', error)
+    return []
+  }
+}
+
+// 월간 주문 가져오기
+export const getOrdersByMonth = async (date: Date): Promise<OrderList> => {
+  try {
+    const orders = await loadOrdersFromFile()
+    const targetYear = date.getFullYear()
+    const targetMonth = date.getMonth()
+    
+    return orders.filter(order => {
+      const orderDate = new Date(order.orderDate)
+      return orderDate.getFullYear() === targetYear && orderDate.getMonth() === targetMonth
+    })
+  } catch (error) {
+    console.error('월간 주문 목록 불러오기 실패:', error)
+    return []
+  }
 }
 
 export const exportOrdersToExcel = (orders: OrderList): void => {
@@ -95,11 +267,10 @@ export const exportOrdersToExcel = (orders: OrderList): void => {
 }
 
 export const importOrdersFromExcel = (file: File): Promise<OrderList> => {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const reader = new FileReader()
-    const menus = loadMenuFromJson()
-
-    reader.onload = (e) => {
+    
+    reader.onload = async (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer)
         const workbook = XLSX.read(data, { type: 'array' })
@@ -107,6 +278,7 @@ export const importOrdersFromExcel = (file: File): Promise<OrderList> => {
         const jsonData = XLSX.utils.sheet_to_json(worksheet) as ExcelOrder[]
 
         const orderMap = new Map<string, Order>()
+        const menus = await loadMenuFromJson()
 
         jsonData.forEach((row) => {
           const menuItem = menus.find(m => m.name === row.메뉴)
@@ -121,7 +293,9 @@ export const importOrdersFromExcel = (file: File): Promise<OrderList> => {
               totalAmount: 0,
               orderDate: new Date(row.주문시간).toISOString(),
               tableNumber: row.테이블번호 || undefined,
-              memo: row.메모 || undefined
+              memo: row.메모 || undefined,
+              status: 'completed',
+              printed: true
             })
           }
 
