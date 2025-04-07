@@ -213,7 +213,7 @@ ipcMain.handle('printer:printOrder', async (_, order: any) => {
     printer.alignLeft()
 
     // 주문 정보 출력
-    printer.println(`주문번호: ${order.id}`)
+    printer.println(`주문번호: ${order.id.split('-')[3] || order.id}`)
     printer.println(`주문시간: ${new Date(order.orderDate).toLocaleString()}`)
     printer.println('-------------------')
 

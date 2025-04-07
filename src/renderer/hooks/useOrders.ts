@@ -16,6 +16,41 @@ export const useOrders = (isPrinterConnected: boolean) => {
            date.getFullYear() === today.getFullYear()
   }
 
+  // 날짜를 "YYYY-MM-DD" 형식으로 변환하는 함수
+  const formatDate = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  // 주문번호 생성 함수
+  const generateOrderId = (): string => {
+    const now = new Date()
+    const dateString = formatDate(now)
+    
+    // 오늘 생성된 주문 수를 세서 다음 번호 생성
+    const todayOrders = orders.filter(order => isToday(order.orderDate))
+    const todayOrderNumbers = todayOrders
+      .map(order => {
+        const parts = order.id.split('-')
+        return parts.length === 4 ? parseInt(parts[3]) : 0
+      })
+      .filter(num => !isNaN(num))
+    
+    // 가장 큰 번호 찾기
+    const maxNumber = todayOrderNumbers.length > 0 
+      ? Math.max(...todayOrderNumbers) 
+      : 0
+    
+    // 다음 번호
+    const nextNumber = maxNumber + 1
+    // 4자리 숫자로 패딩
+    const paddedNumber = String(nextNumber).padStart(4, '0')
+    
+    return `${dateString}-${paddedNumber}`
+  }
+
   useEffect(() => {
     loadOrdersData()
   }, [])
@@ -62,7 +97,7 @@ export const useOrders = (isPrinterConnected: boolean) => {
       )
 
       const order: Order = {
-        id: Date.now().toString(),
+        id: generateOrderId(),
         items: orderItems,  // 품절 필터링 없이 그대로 사용
         totalAmount,
         orderDate: new Date().toISOString(),
