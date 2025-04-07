@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { promises as fs } from 'node:fs'
 import fs_sync from 'node:fs'
 import { ThermalPrinter, PrinterTypes } from 'node-thermal-printer'
+const usb = require('usb')
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -144,36 +145,47 @@ ipcMain.handle('orders:saveToJson', async (_, orders) => {
   }
 })
 
-// 프린터 설정
-const printerConfig = {
-  type: PrinterTypes.EPSON,
-  interface: 'printer:POS-58',
-  options: {
-    timeout: 3000
-  }
-}
-
+// 프린터 설정 및 USB 관련 변수
+const EPSON_VENDOR_ID = 0x04b8 // Seiko Epson Corp.
+const EPSON_PRODUCT_ID = 0x0e27 // TM-T83III
 let printer: ThermalPrinter | null = null
+let usbDevice: any = null
 
 // 프린터 IPC 핸들러
 ipcMain.handle('printer:initialize', async () => {
   try {
-    printer = new ThermalPrinter(printerConfig)
-    await printer.isPrinterConnected()
+    // USB 장치 찾기
+    usbDevice = usb.findByIds(EPSON_VENDOR_ID, EPSON_PRODUCT_ID)
+    
+    if (!usbDevice) {
+      console.error('프린터 USB 장치를 찾을 수 없습니다')
+      return false
+    }
+    
+    // 프린터 초기화
+    printer = new ThermalPrinter({
+      type: PrinterTypes.EPSON,
+      interface: 'usb',
+    })
+    
+    console.log('프린터 USB 장치 발견:', EPSON_VENDOR_ID.toString(16), EPSON_PRODUCT_ID.toString(16))
     return true
   } catch (error) {
     console.error('프린터 초기화 실패:', error)
     printer = null
+    usbDevice = null
     return false
   }
 })
 
 ipcMain.handle('printer:getStatus', async () => {
-  if (!printer) {
+  if (!printer || !usbDevice) {
     return false
   }
+  
   try {
-    return await printer.isPrinterConnected()
+    // USB 장치가 연결되어 있는지 확인
+    return usbDevice !== null
   } catch (error) {
     console.error('프린터 상태 확인 실패:', error)
     return false
@@ -181,20 +193,16 @@ ipcMain.handle('printer:getStatus', async () => {
 })
 
 ipcMain.handle('printer:printOrder', async (_, order: any) => {
-  const config = await loadPrinterConfig()
-  if (!config) {
-    throw new Error('프린터가 설정되지 않았습니다.')
+  if (!usbDevice) {
+    throw new Error('프린터가 연결되어 있지 않습니다')
   }
 
-  const printer = new ThermalPrinter({
-    type: PrinterTypes.EPSON,
-    interface: config.interface,
-    options: {
-      timeout: 3000
-    }
-  })
-
   try {
+    const printer = new ThermalPrinter({
+      type: PrinterTypes.EPSON,
+      interface: 'usb',
+    })
+
     // 헤더 출력
     printer.alignCenter()
     printer.bold(true)
@@ -235,12 +243,59 @@ ipcMain.handle('printer:printOrder', async (_, order: any) => {
 
     // 푸터 출력
     printer.println('\n\n')
-    printer.cut()
     
-    await printer.execute()
+    // 용지 절단 명령 추가
+    printer.partialCut(); // 부분 절단 (용지가 약간 연결된 상태로 남음)
+    
+    // USB 장치로 데이터 전송
+    usbDevice.open()
+    
+    try {
+      const usbInterface = usbDevice.interfaces[0]
+      usbInterface.claim()
+      
+      // 아웃 엔드포인트 찾기 (프린터로 데이터 전송용)
+      let outEndpoint = null
+      for (const endpoint of usbInterface.endpoints) {
+        if (endpoint.direction === 'out') {
+          outEndpoint = endpoint
+          break
+        }
+      }
+      
+      if (!outEndpoint) {
+        throw new Error('출력 엔드포인트를 찾을 수 없습니다')
+      }
+      
+      // 데이터 전송
+      const buffer = printer.getBuffer()
+      console.log('프린터로 전송할 버퍼 길이:', buffer.length, '바이트')
+      
+      await new Promise<void>((resolve, reject) => {
+        outEndpoint.transfer(buffer, (error: Error) => {
+          if (error) {
+            reject(error)
+          } else {
+            resolve()
+          }
+        })
+      })
+      
+      // 자원 해제
+      usbInterface.release(() => {
+        usbDevice.close()
+      })
+      
+    } catch (error) {
+      // 에러 발생 시 장치 닫기 시도
+      try {
+        usbDevice.close()
+      } catch {}
+      throw error
+    }
   } catch (error) {
     console.error('주문서 출력 실패:', error)
-    throw new Error('주문서 출력에 실패했습니다.')
+    throw new Error('주문서 출력에 실패했습니다')
   }
 })
 
