@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { MenuItem } from '@/shared/types/menu'
 import { OrderItem } from '@/shared/types/order'
 
@@ -9,6 +9,7 @@ const ORDER_MEMO_STORAGE_KEY = 'orderMemo'
 export const useOrderItems = (getOriginalId: (id: string) => string, menus: MenuItem[]) => {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [memo, setMemo] = useState<string>('')
+  const initialized = useRef(false)
 
   // localStorage에 orderItems 저장
   const saveOrderItemsToStorage = (items: OrderItem[]) => {
@@ -64,12 +65,15 @@ export const useOrderItems = (getOriginalId: (id: string) => string, menus: Menu
     }
   }
 
+  // 최초 마운트 시에만 실행되는 useEffect (데이터 로딩용)
   useEffect(() => {
+    if (initialized.current) return
+    
     // 컴포넌트가 마운트될 때 localStorage에서 orderItems 복원
     const storedOrderItems = loadOrderItemsFromStorage()
     const storedMemo = loadMemoFromStorage()
     
-    // localStorage에서 항목을 복원한 후 제거 (pop)
+    // 이전에 로드된 항목이 있는 경우에만 처리
     if (storedOrderItems.length > 0) {
       clearOrderItemsFromStorage()
       
@@ -98,25 +102,27 @@ export const useOrderItems = (getOriginalId: (id: string) => string, menus: Menu
     if (storedMemo) {
       setMemo(storedMemo)
     }
+    
+    initialized.current = true
   }, [menus, getOriginalId])
 
-  // orderItems 변경 시 localStorage에 저장하는 useEffect 추가
-  useEffect(() => {
-    if (orderItems.length > 0) {
-      saveOrderItemsToStorage(orderItems)
+  // orderItems 저장을 관리하는 함수
+  const saveOrderItems = (items: OrderItem[]) => {
+    if (items.length > 0) {
+      saveOrderItemsToStorage(items)
     } else {
       localStorage.removeItem(ORDER_ITEMS_STORAGE_KEY)
     }
-  }, [orderItems])
+  }
 
-  // memo 변경 시 localStorage에 저장하는 useEffect 추가
-  useEffect(() => {
-    if (memo) {
-      saveMemoToStorage(memo)
+  // memo 저장을 관리하는 함수
+  const saveMemo = (memoText: string) => {
+    if (memoText) {
+      saveMemoToStorage(memoText)
     } else {
       localStorage.removeItem(ORDER_MEMO_STORAGE_KEY)
     }
-  }, [memo])
+  }
 
   const handleAddItem = (menu: MenuItem) => {
     setOrderItems(prev => {
@@ -125,23 +131,31 @@ export const useOrderItems = (getOriginalId: (id: string) => string, menus: Menu
         item.menuItem.isIce === menu.isIce && 
         item.menuItem.isHot === menu.isHot
       )
-      if (existingItem) {
-        return prev.map(item =>
-          item.menuItem.id === menu.id && 
-          item.menuItem.isIce === menu.isIce && 
-          item.menuItem.isHot === menu.isHot
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        )
+      
+      const newItems = existingItem
+        ? prev.map(item =>
+            item.menuItem.id === menu.id && 
+            item.menuItem.isIce === menu.isIce && 
+            item.menuItem.isHot === menu.isHot
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          )
+        : [...prev, { menuItem: menu, quantity: 1 }]
+      
+      // 상태 업데이트 후 로컬 스토리지 저장 (초기화 이후에만)
+      if (initialized.current) {
+        saveOrderItems(newItems)
       }
-      return [...prev, { menuItem: menu, quantity: 1 }]
+      
+      return newItems
     })
   }
 
   const handleUpdateQuantity = (itemId: string, isIce: boolean | undefined, isHot: boolean | undefined, newQuantity: number) => {
     if (newQuantity < 0) return
-    setOrderItems(prev =>
-      newQuantity === 0
+    
+    setOrderItems(prev => {
+      const newItems = newQuantity === 0
         ? prev.filter(item => 
             !(item.menuItem.id === itemId && 
               item.menuItem.isIce === isIce && 
@@ -154,7 +168,14 @@ export const useOrderItems = (getOriginalId: (id: string) => string, menus: Menu
               ? { ...item, quantity: newQuantity }
               : item
           )
-    )
+      
+      // 상태 업데이트 후 로컬 스토리지 저장 (초기화 이후에만)
+      if (initialized.current) {
+        saveOrderItems(newItems)
+      }
+      
+      return newItems
+    })
   }
 
   const hasSoldOutItems = () => {
@@ -178,11 +199,19 @@ export const useOrderItems = (getOriginalId: (id: string) => string, menus: Menu
     clearOrderItemsFromStorage()
   }
 
+  // memo 변경 처리를 위한 함수
+  const handleMemoChange = (newMemo: string) => {
+    setMemo(newMemo)
+    if (initialized.current) {
+      saveMemo(newMemo)
+    }
+  }
+
   return {
     orderItems,
     setOrderItems,
     memo,
-    setMemo,
+    setMemo: handleMemoChange,
     handleAddItem,
     handleUpdateQuantity,
     hasSoldOutItems,
