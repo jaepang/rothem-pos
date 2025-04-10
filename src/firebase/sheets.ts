@@ -117,12 +117,68 @@ export const SheetsService = {
   }
 };
 
-// JSON 데이터를 시트 형식으로 변환 (특수 문자 처리 추가)
-export const convertJsonToSheetData = (jsonData: any[]): any[][] => {
+// 각 데이터 타입별 영어 키 -> 한국어 컬럼명 매핑
+interface ColumnMapping {
+  [key: string]: string;
+}
+
+interface SheetMappings {
+  menu: ColumnMapping;
+  inventory: ColumnMapping;
+  orders: ColumnMapping;
+  [key: string]: ColumnMapping;
+}
+
+const columnMappings: SheetMappings = {
+  // 메뉴 데이터 컬럼 매핑
+  menu: {
+    id: '메뉴ID',
+    name: '메뉴명',
+    price: '가격',
+    category: '카테고리',
+    imageUrl: '이미지URL',
+    description: '설명',
+    isAvailable: '판매여부',
+    options: '옵션'
+  },
+  
+  // 재고 데이터 컬럼 매핑
+  inventory: {
+    id: '재고ID',
+    name: '상품명',
+    quantity: '수량',
+    unit: '단위',
+    lastUpdated: '최종수정일',
+    threshold: '최소수량',
+    category: '분류'
+  },
+  
+  // 주문 데이터 컬럼 매핑
+  orders: {
+    id: '주문번호',
+    orderDate: '주문일시',
+    customerName: '고객명',
+    totalAmount: '총액',
+    paymentMethod: '결제방법',
+    status: '주문상태',
+    items: '주문항목',
+    memo: '메모',
+    tableNumber: '테이블번호'
+  }
+};
+
+// JSON 데이터를 시트 형식으로 변환 (특수 문자 처리 및 한국어 컬럼명 적용)
+export const convertJsonToSheetData = (jsonData: any[], sheetName: string = 'menu'): any[][] => {
   if (!jsonData || !jsonData.length) return [[]];
   
   // 헤더 행 (모든 키 추출)
-  const headers = Object.keys(jsonData[0]);
+  const keys = Object.keys(jsonData[0]);
+  
+  // 해당 시트에 대한 매핑 가져오기 (없으면 기본 매핑 사용)
+  const mapping = columnMappings[sheetName as keyof typeof columnMappings] || {};
+  
+  // 키를 한국어 컬럼명으로 변환 (매핑이 없는 경우 원래 키 사용)
+  const headers = keys.map(key => mapping[key] || key);
   
   // 데이터 정제 함수
   const sanitizeValue = (value: any): string => {
@@ -139,7 +195,7 @@ export const convertJsonToSheetData = (jsonData: any[]): any[][] => {
   
   // 데이터 행 추가 (정제 과정 포함)
   const rows = jsonData.map(item => 
-    headers.map(header => sanitizeValue(item[header]))
+    keys.map(key => sanitizeValue(item[key]))
   );
   
   // 헤더와 데이터 결합

@@ -49,7 +49,7 @@ export const GoogleSheetSync = ({ token, selectedSheet, onSync }: Props) => {
         // 시트가 비어있는지 확인
         const isEmpty = await SheetsService.isSheetEmpty(token, selectedSheet.id, 'menu');
         if (isEmpty) {
-          const menuSheetData = convertJsonToSheetData(menuData);
+          const menuSheetData = convertJsonToSheetData(menuData, 'menu');
           await SheetsService.writeData(token, selectedSheet.id, 'menu!A1', menuSheetData);
           setMessage('메뉴 데이터 업로드 완료');
         } else {
@@ -61,7 +61,7 @@ export const GoogleSheetSync = ({ token, selectedSheet, onSync }: Props) => {
       if (inventoryData && inventoryData.length > 0) {
         const isEmpty = await SheetsService.isSheetEmpty(token, selectedSheet.id, 'inventory');
         if (isEmpty) {
-          const inventorySheetData = convertJsonToSheetData(inventoryData);
+          const inventorySheetData = convertJsonToSheetData(inventoryData, 'inventory');
           await SheetsService.writeData(token, selectedSheet.id, 'inventory!A1', inventorySheetData);
           setMessage('재고 데이터 업로드 완료');
         } else {
@@ -73,7 +73,7 @@ export const GoogleSheetSync = ({ token, selectedSheet, onSync }: Props) => {
       if (ordersData && ordersData.length > 0) {
         const isEmpty = await SheetsService.isSheetEmpty(token, selectedSheet.id, 'orders');
         if (isEmpty) {
-          const ordersSheetData = convertJsonToSheetData(ordersData);
+          const ordersSheetData = convertJsonToSheetData(ordersData, 'orders');
           await SheetsService.writeData(token, selectedSheet.id, 'orders!A1', ordersSheetData);
           setMessage('주문 데이터 업로드 완료');
         } else {
