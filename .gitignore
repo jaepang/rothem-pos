@@ -27,3 +27,6 @@ release
 # Environment variables
 .env
 .env.*
+
+# Google API credentials
+google-credentials.json
