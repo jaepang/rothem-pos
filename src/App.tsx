@@ -5,8 +5,9 @@ import { MenuManagement } from './renderer/components/menu/MenuManagement'
 import { CategoryManagement } from './renderer/components/menu/CategoryManagement'
 import { InventoryManagement } from './renderer/components/inventory/InventoryManagement'
 import { OrderHistory } from './renderer/components/order/OrderHistory'
+import { SettingsPage } from './renderer/components/settings/SettingsPage'
 
-type TabType = 'order' | 'menu' | 'category' | 'inventory' | 'history'
+type TabType = 'order' | 'menu' | 'category' | 'inventory' | 'history' | 'settings'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('order')
@@ -18,6 +19,7 @@ export default function App() {
       {activeTab === 'category' && <CategoryManagement />}
       {activeTab === 'inventory' && <InventoryManagement />}
       {activeTab === 'history' && <OrderHistory />}
+      {activeTab === 'settings' && <SettingsPage />}
     </MainLayout>
   )
 }
