@@ -12,6 +12,7 @@ import { GoogleSheetSync } from './GoogleSheetSync'
 export const GoogleAuth = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [loadingSheets, setLoadingSheets] = useState(false)
   const [token, setToken] = useState<GoogleToken | null>(null)
   const [sheets, setSheets] = useState<GoogleSheet[]>([])
   const [selectedSheet, setSelectedSheet] = useState<GoogleSheet | null>(null)
@@ -23,10 +24,17 @@ export const GoogleAuth = () => {
   }, [])
 
   // 로그인 상태 확인
-  const checkAuthStatus = () => {
+  const checkAuthStatus = async () => {
     const user = getCurrentUser()
     if (user) {
       setIsLoggedIn(true)
+      try {
+        // 로그인 상태가 유지되고 있을 때 필요한 토큰 가져오기
+        const newToken = await signInWithGoogle()
+        setToken(newToken)
+      } catch (error) {
+        console.error('토큰 가져오기 실패:', error)
+      }
     }
   }
 
@@ -69,6 +77,9 @@ export const GoogleAuth = () => {
 
   // 스프레드시트 목록 가져오기
   const loadSheetsList = async (authToken: GoogleToken) => {
+    setLoadingSheets(true)
+    setError(null)
+    
     try {
       const sheetList = await fetchGoogleSheetsList(authToken)
       setSheets(sheetList)
@@ -84,7 +95,19 @@ export const GoogleAuth = () => {
     } catch (error: any) {
       console.error('스프레드시트 목록 가져오기 실패:', error)
       setError(error.message || '스프레드시트 목록을 가져오는 중 오류가 발생했습니다.')
+    } finally {
+      setLoadingSheets(false)
     }
+  }
+  
+  // 현재 토큰으로 시트 목록 새로고침
+  const handleRefreshSheets = async () => {
+    if (!token) {
+      setError('로그인 상태가 아닙니다. 다시 로그인해주세요.')
+      return
+    }
+    
+    await loadSheetsList(token)
   }
   
   // 스프레드시트 선택 핸들러
@@ -132,12 +155,19 @@ export const GoogleAuth = () => {
             </button>
           </div>
           
-          {sheets.length > 0 && (
-            <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
               <h3 className="font-medium">사용 가능한 스프레드시트</h3>
-              <p className="text-sm text-gray-600">
-                아래 목록에서 데이터 소스로 사용할 스프레드시트를 선택하세요.
-              </p>
+              <button 
+                onClick={handleRefreshSheets}
+                disabled={loadingSheets}
+                className="px-3 py-1 text-sm text-white bg-blue-500 rounded hover:bg-blue-600 disabled:bg-gray-400"
+              >
+                {loadingSheets ? '로딩 중...' : '시트 목록 새로고침'}
+              </button>
+            </div>
+            
+            {sheets.length > 0 ? (
               <div className="max-h-60 overflow-y-auto">
                 <ul className="space-y-1">
                   {sheets.map((sheet) => (
@@ -153,8 +183,14 @@ export const GoogleAuth = () => {
                   ))}
                 </ul>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="p-3 text-sm text-gray-600 bg-gray-100 rounded">
+                {loadingSheets 
+                  ? '시트 목록을 가져오는 중...' 
+                  : '시트 목록이 없습니다. 새로고침 버튼을 클릭하여 시트 목록을 가져오세요.'}
+              </div>
+            )}
+          </div>
           
           {/* 선택한 시트가 있을 때 연동 컴포넌트 표시 */}
           {selectedSheet && token && (

@@ -117,15 +117,30 @@ export const SheetsService = {
   }
 };
 
-// JSON 데이터를 시트 형식으로 변환
+// JSON 데이터를 시트 형식으로 변환 (특수 문자 처리 추가)
 export const convertJsonToSheetData = (jsonData: any[]): any[][] => {
   if (!jsonData || !jsonData.length) return [[]];
   
   // 헤더 행 (모든 키 추출)
   const headers = Object.keys(jsonData[0]);
   
-  // 데이터 행 추가
-  const rows = jsonData.map(item => headers.map(header => item[header]));
+  // 데이터 정제 함수
+  const sanitizeValue = (value: any): string => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value);
+      } catch (e) {
+        return String(value);
+      }
+    }
+    return String(value).replace(/\n/g, ' ');
+  };
+  
+  // 데이터 행 추가 (정제 과정 포함)
+  const rows = jsonData.map(item => 
+    headers.map(header => sanitizeValue(item[header]))
+  );
   
   // 헤더와 데이터 결합
   return [headers, ...rows];
