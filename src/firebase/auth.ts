@@ -22,9 +22,9 @@ export interface GoogleSheet {
 const createGoogleProvider = () => {
   const provider = new GoogleAuthProvider()
   
-  // 필요한 스코프 추가
-  provider.addScope('https://www.googleapis.com/auth/spreadsheets.readonly')
-  provider.addScope('https://www.googleapis.com/auth/drive.readonly')
+  // 필요한 스코프 추가 (쓰기 권한 포함)
+  provider.addScope('https://www.googleapis.com/auth/drive')
+  provider.addScope('https://www.googleapis.com/auth/spreadsheets')
   
   return provider
 }

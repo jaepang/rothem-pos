@@ -7,12 +7,14 @@ import {
   GoogleToken,
   GoogleSheet
 } from '../../../firebase/auth'
+import { GoogleSheetSync } from './GoogleSheetSync'
 
 export const GoogleAuth = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [token, setToken] = useState<GoogleToken | null>(null)
   const [sheets, setSheets] = useState<GoogleSheet[]>([])
+  const [selectedSheet, setSelectedSheet] = useState<GoogleSheet | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // 초기 로드 시 로그인 상태 확인
@@ -58,6 +60,7 @@ export const GoogleAuth = () => {
       setToken(null)
       setIsLoggedIn(false)
       setSheets([])
+      setSelectedSheet(null)
     } catch (error: any) {
       console.error('구글 로그아웃 실패:', error)
       setError(error.message || '구글 로그아웃 중 오류가 발생했습니다.')
@@ -69,9 +72,30 @@ export const GoogleAuth = () => {
     try {
       const sheetList = await fetchGoogleSheetsList(authToken)
       setSheets(sheetList)
+      
+      // 저장된 시트 ID가 있으면 선택
+      const savedSheetId = localStorage.getItem('syncedSheetId')
+      if (savedSheetId) {
+        const savedSheet = sheetList.find(sheet => sheet.id === savedSheetId)
+        if (savedSheet) {
+          setSelectedSheet(savedSheet)
+        }
+      }
     } catch (error: any) {
       console.error('스프레드시트 목록 가져오기 실패:', error)
       setError(error.message || '스프레드시트 목록을 가져오는 중 오류가 발생했습니다.')
+    }
+  }
+  
+  // 스프레드시트 선택 핸들러
+  const handleSelectSheet = (sheet: GoogleSheet) => {
+    setSelectedSheet(sheet)
+  }
+  
+  // 연동 완료 핸들러
+  const handleSyncComplete = (success: boolean) => {
+    if (success) {
+      // 필요한 추가 작업
     }
   }
 
@@ -117,15 +141,28 @@ export const GoogleAuth = () => {
               <div className="max-h-60 overflow-y-auto">
                 <ul className="space-y-1">
                   {sheets.map((sheet) => (
-                    <li key={sheet.id} className="p-2 border rounded hover:bg-gray-50">
-                      <button className="w-full text-left" onClick={() => {}}>
-                        {sheet.name}
-                      </button>
+                    <li 
+                      key={sheet.id} 
+                      className={`p-2 border rounded hover:bg-gray-50 cursor-pointer ${
+                        selectedSheet?.id === sheet.id ? 'bg-blue-50 border-blue-300' : ''
+                      }`}
+                      onClick={() => handleSelectSheet(sheet)}
+                    >
+                      {sheet.name}
                     </li>
                   ))}
                 </ul>
               </div>
             </div>
+          )}
+          
+          {/* 선택한 시트가 있을 때 연동 컴포넌트 표시 */}
+          {selectedSheet && token && (
+            <GoogleSheetSync 
+              token={token} 
+              selectedSheet={selectedSheet}
+              onSync={handleSyncComplete}
+            />
           )}
         </div>
       )}
