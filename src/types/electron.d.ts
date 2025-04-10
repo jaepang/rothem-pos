@@ -2,6 +2,8 @@ import { MenuList } from '../types/menu'
 import { Order } from '../types/order'
 import { InventoryList } from '../types/inventory'
 
+// 구글 관련 타입 정의 삭제 (Firebase로 대체됨)
+
 interface ElectronAPI {
   versions: NodeJS.ProcessVersions
   path: {
@@ -20,11 +22,16 @@ interface ElectronAPI {
     loadInventoryFromJson: () => Promise<InventoryList>
     saveInventoryToJson: (inventoryList: InventoryList) => Promise<void>
   }
+  orders: {
+    loadOrdersFromJson: () => Promise<any[]>
+    saveOrdersToJson: (orders: any[]) => Promise<boolean>
+  }
   printer: {
     initialize: () => Promise<boolean>
     getStatus: () => Promise<boolean>
     printOrder: (order: Order) => Promise<void>
   }
+  // 구글 관련 API 제거 (Firebase로 대체됨)
 }
 
 declare global {

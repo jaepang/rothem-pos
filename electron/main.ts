@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promises as fs } from 'node:fs'
