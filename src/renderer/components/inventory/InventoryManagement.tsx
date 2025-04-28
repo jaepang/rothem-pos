@@ -2,14 +2,13 @@ import { useState, useEffect, useRef } from 'react'
 import { InventoryItem, InventoryList } from '@/shared/types/inventory'
 import { MenuList } from '@/shared/types/menu'
 import { 
-  loadInventoryFromJson, 
-  saveInventoryToJson, 
   updateInventoryQuantity,
   importInventoryFromExcel,
   exportInventoryToExcel,
   updateMenuSoldOutStatus
 } from '@/shared/utils/inventory'
-import { loadMenuFromJson, saveMenuToJson } from '@/shared/utils/menu'
+import { DataService } from '@/firebase/dataService'
+import { useAuth } from '@/firebase/AuthContext'
 import { InventoryFormModal } from './InventoryFormModal'
 
 export function InventoryManagement() {
@@ -18,31 +17,42 @@ export function InventoryManagement() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<InventoryItem | undefined>(undefined)
   const excelInputRef = useRef<HTMLInputElement>(null)
+  const { token } = useAuth()
 
   useEffect(() => {
     const loadData = async () => {
+      try {
       const [loadedInventory, loadedMenus] = await Promise.all([
-        loadInventoryFromJson(),
-        loadMenuFromJson()
+          DataService.loadData('inventory', token || undefined),
+          DataService.loadData('menu', token || undefined)
       ])
       setInventory(loadedInventory)
       setMenus(loadedMenus)
+      } catch (error) {
+        console.error('데이터 로드 실패:', error)
+        alert('데이터 로드 중 오류가 발생했습니다.')
+      }
     }
     loadData()
-  }, [])
+  }, [token])
 
   const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 0) return
 
+    try {
     // 재고 수량 업데이트
     const updatedInventory = updateInventoryQuantity(inventory, itemId, newQuantity)
     setInventory(updatedInventory)
-    await saveInventoryToJson(updatedInventory)
+      await DataService.saveData('inventory', updatedInventory, token || undefined)
 
     // 메뉴 품절 상태 업데이트
     const updatedMenus = updateMenuSoldOutStatus(updatedInventory, menus)
     setMenus(updatedMenus)
-    await saveMenuToJson(updatedMenus)
+      await DataService.saveData('menu', updatedMenus, token || undefined)
+    } catch (error) {
+      console.error('재고 업데이트 실패:', error)
+      alert('재고 업데이트 중 오류가 발생했습니다.')
+    }
   }
 
   const handleDirectQuantityChange = async (itemId: string, value: string) => {
@@ -67,15 +77,16 @@ export function InventoryManagement() {
     try {
       const importedInventory = await importInventoryFromExcel(file)
       setInventory(importedInventory)
-      await saveInventoryToJson(importedInventory)
+      await DataService.saveData('inventory', importedInventory, token || undefined)
       
       // 메뉴 품절 상태 업데이트
       const updatedMenus = updateMenuSoldOutStatus(importedInventory, menus)
       setMenus(updatedMenus)
-      await saveMenuToJson(updatedMenus)
+      await DataService.saveData('menu', updatedMenus, token || undefined)
       
       alert(`${importedInventory.length}개의 재고 항목을 가져왔습니다.`)
-    } catch {
+    } catch (error) {
+      console.error('재고 데이터 가져오기 실패:', error)
       alert('재고 데이터를 가져오는데 실패했습니다.')
     } finally {
       if (excelInputRef.current) {
@@ -85,6 +96,7 @@ export function InventoryManagement() {
   }
 
   const handleSubmitInventoryItem = async (itemData: Omit<InventoryItem, 'id'>) => {
+    try {
     let updatedInventory: InventoryList
 
     if (selectedItem) {
@@ -104,28 +116,37 @@ export function InventoryManagement() {
     }
 
     setInventory(updatedInventory)
-    await saveInventoryToJson(updatedInventory)
+      await DataService.saveData('inventory', updatedInventory, token || undefined)
 
     // 메뉴 품절 상태 업데이트
     const updatedMenus = updateMenuSoldOutStatus(updatedInventory, menus)
     setMenus(updatedMenus)
-    await saveMenuToJson(updatedMenus)
+      await DataService.saveData('menu', updatedMenus, token || undefined)
 
     setIsAddModalOpen(false)
     setSelectedItem(undefined)
+    } catch (error) {
+      console.error('재고 항목 저장 실패:', error)
+      alert('재고 항목을 저장하는데 실패했습니다.')
+    }
   }
 
   const handleDeleteInventoryItem = async (itemId: string) => {
     if (!confirm('이 재고 항목을 삭제하시겠습니까?')) return
 
+    try {
     const updatedInventory = inventory.filter(item => item.id !== itemId)
     setInventory(updatedInventory)
-    await saveInventoryToJson(updatedInventory)
+      await DataService.saveData('inventory', updatedInventory, token || undefined)
 
     // 메뉴 품절 상태 업데이트
     const updatedMenus = updateMenuSoldOutStatus(updatedInventory, menus)
     setMenus(updatedMenus)
-    await saveMenuToJson(updatedMenus)
+      await DataService.saveData('menu', updatedMenus, token || undefined)
+    } catch (error) {
+      console.error('재고 항목 삭제 실패:', error)
+      alert('재고 항목을 삭제하는데 실패했습니다.')
+    }
   }
 
   // 특정 재고와 관련된 메뉴 이름 목록 가져오기

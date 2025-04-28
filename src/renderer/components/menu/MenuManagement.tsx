@@ -30,10 +30,20 @@ export function MenuManagement() {
     inventory
   } = useMenuManagement()
 
-  const handleImportMenusEvent = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportMenusEvent = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      handleImportMenus(file)
+      const success = await handleImportMenus(file)
+      if (success) {
+        alert(`메뉴를 성공적으로 가져왔습니다.`)
+      } else {
+        alert('메뉴를 가져오는데 실패했습니다.')
+      }
+      
+      // 파일 입력 초기화
+      if (excelInputRef.current) {
+        excelInputRef.current.value = ''
+      }
     }
   }
 

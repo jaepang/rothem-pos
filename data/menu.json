@@ -179,7 +179,7 @@
     "name": "생크림케이크",
     "price": 8000,
     "category": "케이크",
-    "isSoldOut": true,
+    "isSoldOut": false,
     "isFavorite": false,
     "isIce": false,
     "isHot": false,

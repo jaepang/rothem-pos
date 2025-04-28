@@ -1,6 +1,10 @@
 import { GoogleAuth } from './GoogleAuth'
 
-export const SettingsPage = () => {
+interface SettingsPageProps {
+  onLoginComplete?: () => void;
+}
+
+export const SettingsPage = ({ onLoginComplete }: SettingsPageProps) => {
   return (
     <div className="container p-4 mx-auto">
       <h1 className="mb-6 text-2xl font-bold">설정</h1>
@@ -13,7 +17,7 @@ export const SettingsPage = () => {
               이 앱은 기본적으로 로컬 JSON 파일을 데이터 소스로 사용합니다.
               Google 스프레드시트를 데이터 소스로 사용하려면 아래에서 연동하세요.
             </p>
-            <GoogleAuth />
+            <GoogleAuth onLoginComplete={onLoginComplete} />
           </div>
         </section>
       </div>

@@ -42,12 +42,18 @@ export const signInWithGoogle = async (): Promise<GoogleToken> => {
       throw new Error('로그인은 성공했지만 인증 정보를 가져오지 못했습니다.')
     }
     
-    // 토큰 반환
-    return {
+    // 토큰 생성
+    const token = {
       accessToken: credential.accessToken || '',
       refreshToken: result.user.refreshToken,
       expirationTime: new Date().getTime() + 3600 * 1000 // 대략 1시간 유효
-    }
+    };
+    
+    // 로컬스토리지에 토큰 저장
+    localStorage.setItem('googleAuthToken', JSON.stringify(token));
+    
+    // 토큰 반환
+    return token;
   } catch (error: any) {
     console.error('구글 로그인 실패:', error)
     throw new Error(error.message || '구글 로그인 중 오류가 발생했습니다.')
@@ -58,6 +64,8 @@ export const signInWithGoogle = async (): Promise<GoogleToken> => {
 export const signOutFromGoogle = async (): Promise<void> => {
   try {
     await signOut(auth)
+    // 로그아웃 시 로컬 스토리지에서 토큰 삭제
+    localStorage.removeItem('googleAuthToken');
   } catch (error) {
     console.error('로그아웃 실패:', error)
     throw error

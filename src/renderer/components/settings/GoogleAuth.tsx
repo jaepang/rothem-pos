@@ -9,7 +9,11 @@ import {
 } from '../../../firebase/auth'
 import { GoogleSheetSync } from './GoogleSheetSync'
 
-export const GoogleAuth = () => {
+interface GoogleAuthProps {
+  onLoginComplete?: () => void;
+}
+
+export const GoogleAuth = ({ onLoginComplete }: GoogleAuthProps) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [loadingSheets, setLoadingSheets] = useState(false)
@@ -32,6 +36,9 @@ export const GoogleAuth = () => {
         // 로그인 상태가 유지되고 있을 때 필요한 토큰 가져오기
         const newToken = await signInWithGoogle()
         setToken(newToken)
+        if (onLoginComplete) {
+          onLoginComplete();
+        }
       } catch (error) {
         console.error('토큰 가져오기 실패:', error)
       }
@@ -53,6 +60,11 @@ export const GoogleAuth = () => {
       
       // 스프레드시트 목록 가져오기
       await loadSheetsList(newToken)
+      
+      // 로그인 완료 콜백 호출
+      if (onLoginComplete) {
+        onLoginComplete();
+      }
     } catch (error: any) {
       console.error('구글 로그인 실패:', error)
       setError(error.message || '구글 로그인 중 오류가 발생했습니다.')

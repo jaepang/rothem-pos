@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { MenuItem, MenuList, CategoryList } from '@/shared/types/menu'
 import { InventoryList, InventoryItem } from '@/shared/types/inventory'
-import { loadMenuFromJson, saveMenuToJson, importMenuFromExcel, exportMenuToExcel, deleteMenuItem } from '@/shared/utils/menu'
+import { importMenuFromExcel, exportMenuToExcel, deleteMenuItem } from '@/shared/utils/menu'
 import { loadCategories } from '@/shared/utils/category'
-import { loadInventoryFromJson } from '@/shared/utils/inventory'
+import { DataService } from '@/firebase/dataService'
+import { useAuth } from '@/firebase/AuthContext'
 
 export const useMenuManagement = () => {
   const [menus, setMenus] = useState<MenuList>([])
@@ -13,24 +14,30 @@ export const useMenuManagement = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedMenu, setSelectedMenu] = useState<MenuItem | undefined>(undefined)
   const excelInputRef = useRef<HTMLInputElement>(null)
+  const { token } = useAuth()
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [token])
 
   const loadData = async () => {
-    // 먼저 메뉴를 불러옵니다
-    const loadedMenus = await loadMenuFromJson()
+    try {
+      // 메뉴, 재고 데이터 로드
+      const [loadedMenus, loadedInventory] = await Promise.all([
+        DataService.loadData('menu', token || undefined),
+        DataService.loadData('inventory', token || undefined)
+      ])
     
     // 메뉴 목록을 loadCategories에 전달하여 필요한 카테고리를 생성합니다
-    const [loadedCategories, loadedInventory] = await Promise.all([
-      loadCategories(loadedMenus),
-      loadInventoryFromJson()
-    ])
+      const loadedCategories = await loadCategories(loadedMenus)
     
     setMenus(loadedMenus)
     setCategories(loadedCategories)
     setInventory(loadedInventory)
+    } catch (error) {
+      console.error('메뉴 데이터 로드 실패:', error)
+      alert('메뉴 데이터를 불러오는데 실패했습니다.')
+    }
   }
 
   const handleExportMenus = () => {
@@ -42,59 +49,39 @@ export const useMenuManagement = () => {
   }
 
   const handleImportMenus = async (file: File) => {
-    if (!file) return
-
     try {
       const importedMenus = await importMenuFromExcel(file)
       setMenus(importedMenus)
-      saveMenuToJson(importedMenus)
-      alert(`${importedMenus.length}개의 메뉴를 가져왔습니다.`)
-    } catch {
-      alert('메뉴를 가져오는데 실패했습니다.')
-    } finally {
-      if (excelInputRef.current) {
-        excelInputRef.current.value = ''
-      }
+      await DataService.saveData('menu', importedMenus, token || undefined)
+      
+      // 카테고리 업데이트
+      const loadedCategories = await loadCategories(importedMenus)
+      setCategories(loadedCategories)
+      
+      return true
+    } catch (error) {
+      console.error('메뉴 가져오기 실패:', error)
+      return false
     }
   }
 
-  const handleToggleSoldOut = (menuId: string) => {
-    // 메뉴 찾기
-    const menu = menus.find(m => m.id === menuId)
-    if (!menu) return
-    
-    // 관련 재고 확인
-    const relatedInventory = inventory.filter(item => 
-      item.relatedMenuIds.includes(menuId)
-    )
-    
-    // 재고가 모두 충분한지 확인
-    const allInventorySufficient = relatedInventory.length === 0 || 
-      relatedInventory.every(item => item.quantity > 0)
-    
-    // 현재 품절 상태
-    const isSoldOut = menu.isSoldOut
-    
-    const newSoldOut = !isSoldOut
-    
-    // 재고가 부족한 상태에서 판매중으로 변경하려는 경우
-    if (isSoldOut && !allInventorySufficient) {
-      const confirmToggle = confirm(
-        '이 메뉴는 필요한 재고가 부족한 상태입니다.\n그래도 판매 상태로 변경하시겠습니까?'
-      )
-      if (!confirmToggle) {
-        return
-      }
-    }
-    
-    const updatedMenus = menus.map((menu) =>
-      menu.id === menuId ? { ...menu, isSoldOut: newSoldOut } : menu
+  const handleToggleSoldOut = async (menuId: string) => {
+    try {
+      const updatedMenus = menus.map(menu =>
+        menu.id === menuId
+          ? { ...menu, isSoldOut: !menu.isSoldOut }
+          : menu
     )
     setMenus(updatedMenus)
-    saveMenuToJson(updatedMenus)
+      await DataService.saveData('menu', updatedMenus, token || undefined)
+    } catch (error) {
+      console.error('메뉴 품절 상태 변경 실패:', error)
+      alert('메뉴 품절 상태를 변경하는데 실패했습니다.')
+    }
   }
 
-  const handleSubmitMenu = (menuData: Omit<MenuItem, 'id'>) => {
+  const handleSubmitMenu = async (menuData: Omit<MenuItem, 'id'>) => {
+    try {
     if (selectedMenu) {
       // 메뉴 수정
       const updatedMenus = menus.map(menu =>
@@ -103,7 +90,7 @@ export const useMenuManagement = () => {
           : menu
       )
       setMenus(updatedMenus)
-      saveMenuToJson(updatedMenus)
+        await DataService.saveData('menu', updatedMenus, token || undefined)
     } else {
       // 새 메뉴 추가
       const newMenu = {
@@ -112,10 +99,14 @@ export const useMenuManagement = () => {
       }
       const updatedMenus = [...menus, newMenu]
       setMenus(updatedMenus)
-      saveMenuToJson(updatedMenus)
+        await DataService.saveData('menu', updatedMenus, token || undefined)
     }
     setIsAddModalOpen(false)
     setSelectedMenu(undefined)
+    } catch (error) {
+      console.error('메뉴 저장 실패:', error)
+      alert('메뉴를 저장하는데 실패했습니다.')
+    }
   }
 
   const handleEditMenu = (menu: MenuItem) => {
@@ -127,11 +118,16 @@ export const useMenuManagement = () => {
     }
   }
 
-  const handleDeleteMenu = (menu: MenuItem) => {
+  const handleDeleteMenu = async (menu: MenuItem) => {
     if (confirm('이 메뉴를 삭제하시겠습니까?')) {
+      try {
       const updatedMenus = deleteMenuItem(menu, menus)
       setMenus(updatedMenus)
-      saveMenuToJson(updatedMenus)
+        await DataService.saveData('menu', updatedMenus, token || undefined)
+      } catch (error) {
+        console.error('메뉴 삭제 실패:', error)
+        alert('메뉴를 삭제하는데 실패했습니다.')
+      }
     }
   }
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { MenuItem, MenuList } from '@/shared/types/menu'
-import { loadMenuFromJson, saveMenuToJson } from '@/shared/utils/menu'
 import { loadCategories } from '@/shared/utils/category'
+import { DataService } from '@/firebase/dataService'
+import { useAuth } from '@/firebase/AuthContext'
 
 export const useMenu = () => {
   const [menus, setMenus] = useState<MenuList>([])
@@ -9,6 +10,7 @@ export const useMenu = () => {
   const [isEditMode, setIsEditMode] = useState<boolean>(false)
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null)
   const [selectedOriginalId, setSelectedOriginalId] = useState<string | null>(null)
+  const { token } = useAuth()
 
   // 원본 ID 추출 헬퍼 함수
   const getOriginalId = (menuId: string) => {
@@ -20,10 +22,11 @@ export const useMenu = () => {
 
   useEffect(() => {
     loadMenuData()
-  }, [])
+  }, [token])
 
   const loadMenuData = async () => {
-    const loadedMenus = await loadMenuFromJson()
+    try {
+      const loadedMenus = await DataService.loadData('menu', token || undefined)
     
     // 메뉴 목록을 loadCategories에 전달하여 필요한 카테고리를 생성합니다
     await loadCategories(loadedMenus)
@@ -40,7 +43,7 @@ export const useMenu = () => {
 
       // 카테고리를 메뉴 수 기준으로 정렬
       const sortedCategories = Object.entries(categoryCounts)
-        .sort(([, a], [, b]) => b - a)
+          .sort(([, a], [, b]) => (b as number) - (a as number))
         .map(([category]) => category)
       
       // 정렬된 카테고리 순서대로 메뉴 정렬
@@ -62,18 +65,22 @@ export const useMenu = () => {
       // 메뉴 상태 업데이트
       setMenus(menusWithOrder)
       
-      // 메뉴 정렬 정보를 JSON에 저장
+        // 메뉴 정렬 정보를 저장
       try {
-        await saveMenuToJson(menusWithOrder)
+          await DataService.saveData('menu', menusWithOrder, token || undefined)
       } catch (error) {
         console.error('메뉴 순서 저장 실패:', error)
       }
     } else {
       // order 필드가 이미 있는 경우 해당 필드로 정렬
       const sortedMenus = [...loadedMenus].sort((a, b) => {
-        return (a.order || 0) - (b.order || 0)
+          return (a.order || a.order === 0 ? a.order : 0) - (b.order || b.order === 0 ? b.order : 0)
       })
       setMenus(sortedMenus)
+      }
+    } catch (error) {
+      console.error('메뉴 데이터 로드 실패:', error)
+      setMenus([])
     }
   }
 
@@ -131,87 +138,32 @@ export const useMenu = () => {
     }).flat()
   }
 
-  // 순서 변경 함수
+  // 메뉴 순서 변경 핸들러
   const handleOrderChange = (index: number) => {
-    if (!isEditMode) return
-    
-    const displayMenus = getDisplayMenus()
-    
-    // 선택된 메뉴의 원본 ID 가져오기
-    const selectedMenu = displayMenus[index]
-    const origId = getOriginalId(selectedMenu.id)
-    
-    // 이미 선택된 카드를 다시 클릭한 경우 선택 해제
-    if (selectedCardIndex === index || 
-        (selectedOriginalId !== null && getOriginalId(selectedMenu.id) === selectedOriginalId)) {
-      setSelectedCardIndex(null)
-      setSelectedOriginalId(null)
-      return
-    }
-    
-    if (selectedCardIndex === null) {
-      // 첫 번째 카드 선택
       setSelectedCardIndex(index)
-      setSelectedOriginalId(origId) // 원본 ID 저장
-    } else if (selectedCardIndex !== index) {
-      // 두 번째 카드 선택 시 순서 교환
-      const updatedMenus = [...menus]
-      const firstMenu = displayMenus[selectedCardIndex]
-      const secondMenu = displayMenus[index]
-      
-      // 원본 메뉴 찾기
-      const firstOriginalId = getOriginalId(firstMenu.id)
-      const secondOriginalId = getOriginalId(secondMenu.id)
-      
-      const firstMenuOriginalIndex = updatedMenus.findIndex(m => m.id === firstOriginalId)
-      const secondMenuOriginalIndex = updatedMenus.findIndex(m => m.id === secondOriginalId)
-      
-      if (firstMenuOriginalIndex !== -1 && secondMenuOriginalIndex !== -1) {
-        // 두 카드의 order 값 교환 (변형 고려)
-        const firstOrder = updatedMenus[firstMenuOriginalIndex].order || 0
-        const secondOrder = updatedMenus[secondMenuOriginalIndex].order || 0
-        
-        // 원본 메뉴 업데이트
-        updatedMenus[firstMenuOriginalIndex] = {
-          ...updatedMenus[firstMenuOriginalIndex],
-          order: secondOrder
-        }
-        
-        updatedMenus[secondMenuOriginalIndex] = {
-          ...updatedMenus[secondMenuOriginalIndex],
-          order: firstOrder
-        }
-        
-        setMenus(updatedMenus)
-      }
-      
-      // 선택 초기화
-      setSelectedCardIndex(null)
-      setSelectedOriginalId(null) // 원본 ID 초기화
-    }
+    const menu = getDisplayMenus()[index]
+    const origId = getOriginalId(menu.id)
+    setSelectedOriginalId(origId)
   }
 
-  // 편집 모드 저장
+  // 메뉴 순서 저장 핸들러
   const handleSaveOrder = async () => {
     try {
-      await saveMenuToJson(menus)
+      await DataService.saveData('menu', menus, token || undefined)
       setIsEditMode(false)
       setSelectedCardIndex(null)
-      setSelectedOriginalId(null) // 원본 ID 초기화
-      alert('메뉴 순서가 저장되었습니다.')
+      setSelectedOriginalId(null)
     } catch (error) {
       console.error('메뉴 순서 저장 실패:', error)
-      alert('메뉴 순서 저장에 실패했습니다.')
+      alert('메뉴 순서를 저장하는데 실패했습니다.')
     }
   }
 
-  // 편집 모드 취소
-  const handleCancelEdit = async () => {
-    // 원래 메뉴 다시 불러오기
-    await loadMenuData()
+  // 메뉴 순서 편집 취소 핸들러
+  const handleCancelEdit = () => {
     setIsEditMode(false)
     setSelectedCardIndex(null)
-    setSelectedOriginalId(null) // 원본 ID 초기화
+    setSelectedOriginalId(null)
   }
 
   return {

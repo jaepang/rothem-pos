@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Order, OrderItem } from '@/shared/types/order'
-import { saveOrder, getOrders, loadOrdersFromFile, saveOrdersToFile } from '@/shared/utils/order'
 import { printOrder } from '@/shared/utils/printer'
+import { DataService } from '@/firebase/dataService'
+import { useAuth } from '@/firebase/AuthContext'
 
 export const useOrders = (isPrinterConnected: boolean) => {
   const [orders, setOrders] = useState<Order[]>([])
   const [showCompletedOrders, setShowCompletedOrders] = useState<boolean>(false)
+  const { token } = useAuth()
 
   // 오늘 날짜인지 확인하는 함수
   const isToday = (dateString: string): boolean => {
@@ -53,28 +55,32 @@ export const useOrders = (isPrinterConnected: boolean) => {
 
   useEffect(() => {
     loadOrdersData()
-  }, [])
+  }, [token])
 
   const loadOrdersData = async () => {
     try {
-      // 파일 기반 주문 데이터 로드
-      const allOrders = await loadOrdersFromFile()
+      // 구글 시트 또는 파일에서 주문 데이터 로드
+      const allOrders = await DataService.loadData('orders', token || undefined) as Order[]
+      
+      // 상태별로 분류 후 저장
       const pendingOrders = allOrders.filter(order => order.status === 'pending')
       const completedOrders = allOrders.filter(order => order.status === 'completed')
       const cancelledOrders = allOrders.filter(order => order.status === 'cancelled')
+      
       setOrders([...pendingOrders, ...completedOrders, ...cancelledOrders])
     } catch (error) {
       console.error('주문 데이터 로딩 실패:', error)
-      // 폴백으로 이전 방식 사용
-      try {
-        const pendingOrders = await getOrders('pending')
-        const completedOrders = await getOrders('completed')
-        const cancelledOrders = await getOrders('cancelled')
-        setOrders([...pendingOrders, ...completedOrders, ...cancelledOrders])
-      } catch (fallbackError) {
-        console.error('주문 데이터 폴백 로딩 실패:', fallbackError)
         setOrders([])
       }
+  }
+
+  // 주문 저장 헬퍼 함수
+  const saveOrders = async (updatedOrders: Order[]) => {
+    try {
+      await DataService.saveData('orders', updatedOrders, token || undefined)
+    } catch (error) {
+      console.error('주문 데이터 저장 실패:', error)
+      throw error
     }
   }
 
@@ -98,7 +104,7 @@ export const useOrders = (isPrinterConnected: boolean) => {
 
       const order: Order = {
         id: generateOrderId(),
-        items: orderItems,  // 품절 필터링 없이 그대로 사용
+        items: orderItems,
         totalAmount,
         orderDate: new Date().toISOString(),
         memo: memo || undefined,
@@ -107,17 +113,18 @@ export const useOrders = (isPrinterConnected: boolean) => {
       }
 
       // 주문 저장
-      saveOrder(order)
-      setOrders(prevOrders => [...prevOrders, order])
+      const updatedOrders = [...orders, order]
+      setOrders(updatedOrders)
+      await saveOrders(updatedOrders)
 
       // 프린터가 연결된 경우 주문서 출력
       if (isPrinterConnected) {
         try {
           await printOrder(order)
           const updatedOrder = { ...order, printed: true }
-          setOrders(prevOrders => 
-            prevOrders.map(o => o.id === order.id ? updatedOrder : o)
-          )
+          const ordersWithPrintedStatus = orders.map(o => o.id === order.id ? updatedOrder : o)
+          setOrders(ordersWithPrintedStatus)
+          await saveOrders(ordersWithPrintedStatus)
         } catch (error) {
           console.error('주문서 출력 실패:', error)
           alert('주문서 출력에 실패했습니다.')
@@ -132,30 +139,45 @@ export const useOrders = (isPrinterConnected: boolean) => {
     }
   }
 
-  const handleCompleteOrder = (orderId: string) => {
+  const handleCompleteOrder = async (orderId: string) => {
+    try {
     const updatedOrders = orders.map(order =>
       order.id === orderId
         ? { ...order, status: 'completed' as const, completedAt: new Date().toISOString() }
         : order
     )
     setOrders(updatedOrders)
-    updatedOrders.forEach(order => saveOrder(order))
+      await saveOrders(updatedOrders)
+    } catch (error) {
+      console.error('주문 완료 처리 실패:', error)
+      alert('주문 완료 처리에 실패했습니다.')
+    }
   }
 
-  const handleCancelOrder = (orderId: string) => {
+  const handleCancelOrder = async (orderId: string) => {
+    try {
     const updatedOrders = orders.map(order =>
       order.id === orderId
         ? { ...order, status: 'cancelled' as const }
         : order
     )
     setOrders(updatedOrders)
-    updatedOrders.forEach(order => saveOrder(order))
+      await saveOrders(updatedOrders)
+    } catch (error) {
+      console.error('주문 취소 처리 실패:', error)
+      alert('주문 취소 처리에 실패했습니다.')
+    }
   }
 
-  const handleDeleteOrder = (orderId: string) => {
+  const handleDeleteOrder = async (orderId: string) => {
+    try {
     const updatedOrders = orders.filter(order => order.id !== orderId)
     setOrders(updatedOrders)
-    updatedOrders.forEach(order => saveOrder(order))
+      await saveOrders(updatedOrders)
+    } catch (error) {
+      console.error('주문 삭제 처리 실패:', error)
+      alert('주문 삭제 처리에 실패했습니다.')
+    }
   }
 
   const getPendingOrders = () => {
