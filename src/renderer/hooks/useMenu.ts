@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { MenuItem, MenuList } from '@/shared/types/menu'
+import { MenuList } from '@/shared/types/menu'
 import { loadCategories } from '@/shared/utils/category'
 import { DataService } from '@/firebase/dataService'
 import { useAuth } from '@/firebase/AuthContext'
@@ -67,7 +67,7 @@ export const useMenu = () => {
       
         // 메뉴 정렬 정보를 저장
       try {
-          await DataService.saveData('menu', menusWithOrder, token || undefined)
+          await DataService.saveData('menu', menusWithOrder)
       } catch (error) {
         console.error('메뉴 순서 저장 실패:', error)
       }
@@ -149,7 +149,7 @@ export const useMenu = () => {
   // 메뉴 순서 저장 핸들러
   const handleSaveOrder = async () => {
     try {
-      await DataService.saveData('menu', menus, token || undefined)
+      await DataService.saveData('menu', menus)
       setIsEditMode(false)
       setSelectedCardIndex(null)
       setSelectedOriginalId(null)
