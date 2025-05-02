@@ -149,21 +149,54 @@ export const DataService = {
     };
     
     try {
-      // 메뉴 데이터 동기화
-      const menuData = await this.loadData('menu');
-      result.menu = await this.syncToGoogleSheet('menu', menuData, token);
+      const isLinked = this.isGoogleSheetLinked();
+      const sheetInfo = this.getLinkedSheetInfo();
       
-      // 재고 데이터 동기화
-      const inventoryData = await this.loadData('inventory');
-      result.inventory = await this.syncToGoogleSheet('inventory', inventoryData, token);
-      
-      // 주문 데이터 동기화
-      const ordersData = await this.loadData('orders');
-      result.orders = await this.syncToGoogleSheet('orders', ordersData, token);
-      
-      // 쿠폰 데이터 동기화
-      const couponsData = await this.loadData('coupons');
-      result.coupons = await this.syncToGoogleSheet('coupons', couponsData, token);
+      if (!isLinked || !sheetInfo || !token) {
+        console.log(`[DataService] 구글 시트 연동 상태 아님. 동기화 건너뜀`);
+        return result;
+      }
+
+      // 각 데이터 타입 처리
+      for (const type of ['menu', 'inventory', 'orders', 'coupons'] as DataType[]) {
+        try {
+          // 1. JSON 파일에서 데이터 로드 시도
+          let localData = await this.loadData(type);
+          
+          // 2. JSON 파일이 비어있는 경우 (파일이 없거나 빈 배열인 경우)
+          if (!localData || localData.length === 0) {
+            console.log(`[DataService] ${type} JSON 파일이 없거나 비어있습니다. 구글 시트에서 데이터를 가져옵니다.`);
+            
+            try {
+              // 구글 시트에서 데이터 가져오기
+              const sheetData = await SheetsService.loadSheetData(token, sheetInfo.id, type);
+              
+              if (sheetData && sheetData.length > 0) {
+                console.log(`[DataService] 구글 시트에서 ${type} 데이터 ${sheetData.length}개 항목 로드 성공`);
+                
+                // 가져온 데이터를 JSON 파일로 저장
+                await this.saveData(type, sheetData);
+                console.log(`[DataService] 구글 시트의 ${type} 데이터를 JSON 파일로 저장 완료`);
+                
+                // 로컬 데이터 업데이트
+                localData = sheetData;
+                result[type] = true;
+              } else {
+                console.log(`[DataService] 구글 시트에 ${type} 데이터가 없습니다.`);
+              }
+            } catch (sheetError) {
+              console.error(`[DataService] 구글 시트에서 ${type} 데이터 가져오기 실패:`, sheetError);
+            }
+          } else {
+            // 3. JSON 파일에 데이터가 있는 경우, 구글 시트에 동기화
+            console.log(`[DataService] JSON 파일의 ${type} 데이터를 구글 시트에 동기화합니다.`);
+            result[type] = await this.syncToGoogleSheet(type, localData, token);
+          }
+        } catch (typeError) {
+          console.error(`[DataService] ${type} 데이터 처리 중 오류 발생:`, typeError);
+          result[type] = false;
+        }
+      }
       
       console.log('[DataService] 모든 데이터 동기화 결과:', result);
       return result;
