@@ -72,9 +72,6 @@ export const importMenuFromExcel = (file: File): Promise<MenuList> => {
 }
 
 export const deleteMenuItem = (menu: MenuItem, menus: MenuList): MenuList => {
-  // 이미지 삭제
-  deleteImage(menu.imageUrl)
-  
   // 메뉴 목록에서 제거
   return menus.filter((m) => m.id !== menu.id)
 } 
