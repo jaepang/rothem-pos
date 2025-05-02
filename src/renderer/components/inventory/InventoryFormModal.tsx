@@ -48,7 +48,7 @@ export function InventoryFormModal({
       const aIndex = sortedCategories.indexOf(a.category)
       const bIndex = sortedCategories.indexOf(b.category)
       if (aIndex === bIndex) {
-        return a.name.localeCompare(b.name)
+        return a.name < b.name ? -1 : a.name > b.name ? 1 : 0
       }
       return aIndex - bIndex
     })
