@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url'
 import { promises as fs } from 'node:fs'
 import fs_sync from 'node:fs'
 import { ThermalPrinter, PrinterTypes } from 'node-thermal-printer'
+import { URL } from 'node:url'
+import { release } from 'node:os'
 const usb = require('usb')
 
 const __filename = fileURLToPath(import.meta.url)
@@ -418,6 +420,123 @@ async function deletePrinterConfig() {
   }
 }
 
+// Google OAuth 처리를 위한 함수
+function handleGoogleAuth(mainWindow: BrowserWindow, authURL: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    try {
+      // OAuth 전용 인증 창 생성
+      const authWindow = new BrowserWindow({
+        width: 800,
+        height: 600,
+        show: true,
+        parent: mainWindow,
+        modal: true,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true
+        }
+      });
+
+      // 인증 URL 로드
+      authWindow.loadURL(authURL);
+      
+      // 개발자 도구 열기 (개발 중에만 사용)
+      if (process.env.NODE_ENV === 'development') {
+        authWindow.webContents.openDevTools();
+      }
+
+      // 콘솔 메시지 캡처 (디버깅용)
+      authWindow.webContents.on('console-message', (_, level, message) => {
+        console.log(`[AUTH Window] ${message}`);
+      });
+
+      // URL 변경 감지하여 리디렉션 발생 시 토큰 추출
+      authWindow.webContents.on('will-navigate', (event, url) => {
+        handleRedirect(authWindow, url, resolve, reject);
+      });
+
+      authWindow.webContents.on('will-redirect', (event, url) => {
+        handleRedirect(authWindow, url, resolve, reject);
+      });
+
+      // 창이 닫힐 때 처리
+      authWindow.on('closed', () => {
+        reject(new Error('인증 창이 닫혔습니다.'));
+      });
+    } catch (error) {
+      console.error('Google 인증 창 생성 오류:', error);
+      reject(error);
+    }
+  });
+}
+
+// 리디렉션 URL에서 토큰 추출
+function handleRedirect(authWindow: BrowserWindow, url: string, resolve: Function, reject: Function) {
+  try {
+    // 리디렉션 URL에서 토큰 확인
+    if (url.includes('access_token=') || url.includes('code=')) {
+      // URL에서 토큰 파라미터 추출
+      const urlObj = new URL(url);
+      const params = urlObj.hash ? new URLSearchParams(urlObj.hash.substring(1)) : new URLSearchParams(urlObj.search);
+      
+      // 토큰 정보 추출
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      const expiresIn = params.get('expires_in');
+      const code = params.get('code');
+      
+      // 결과 객체 생성
+      const result = {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        expires_in: expiresIn ? parseInt(expiresIn) : 3600,
+        code
+      };
+      
+      console.log('인증 성공! 토큰 정보 추출됨');
+      
+      // 창 닫기
+      authWindow.close();
+      
+      // 결과 반환
+      resolve(result);
+    }
+    
+    // 오류 발생 시 확인
+    if (url.includes('error=')) {
+      const urlObj = new URL(url);
+      const params = new URLSearchParams(urlObj.search);
+      const error = params.get('error');
+      
+      // 창 닫기
+      authWindow.close();
+      
+      // 오류 반환
+      reject(new Error(`인증 오류: ${error}`));
+    }
+  } catch (error) {
+    console.error('리디렉션 처리 오류:', error);
+    reject(error);
+  }
+}
+
+// IPC 이벤트 처리 설정
+ipcMain.handle('auth:google-oauth', async (event, authURL) => {
+  try {
+    const mainWindow = BrowserWindow.fromWebContents(event.sender);
+    if (!mainWindow) {
+      throw new Error('메인 윈도우를 찾을 수 없습니다.');
+    }
+    
+    // Google OAuth 처리
+    const result = await handleGoogleAuth(mainWindow, authURL);
+    return result;
+  } catch (error) {
+    console.error('Google OAuth 처리 오류:', error);
+    throw error;
+  }
+});
+
 // The built directory structure
 //
 // ├─┬─┬ dist
@@ -443,7 +562,83 @@ async function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
+    width: 1200,
+    height: 800,
   })
+
+  // 개발자 도구 활성화 (개발 중에만)
+  if (VITE_DEV_SERVER_URL) {
+    win.webContents.openDevTools();
+  } else {
+    // 빌드된 앱에서도 개발자 도구 활성화 (인증 URL 확인용)
+    win.webContents.openDevTools();
+  }
+
+  // Firebase 요청 URL 로깅
+  win.webContents.session.webRequest.onBeforeRequest({ urls: ['*://*.googleapis.com/*', '*://*.google.com/*', '*://*.firebaseapp.com/*', '*://*.firebase.com/*'] }, 
+    (details, callback) => {
+      console.log('[Firebase URL 요청]', details.method, details.url);
+      callback({});
+    }
+  );
+
+  // 대화상자 핸들러 추가 - Google 로그인 관련 URL을 모두 시스템 브라우저로 열기
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    console.log('[윈도우 열기 요청 URL]', url);
+    
+    // 구글 인증 URL 직접 처리
+    if (url.startsWith('https://accounts.google.com/o/oauth2/auth')) {
+      console.log('[구글 로그인 URL 감지됨]', url);
+      shell.openExternal(url);
+      return { action: 'deny' };
+    }
+    
+    // 외부 브라우저로 열 URL 패턴 목록
+    const externalURLPatterns = [
+      'accounts.google.com',
+      'apis.google.com',
+      'accounts.youtube.com',
+      'firebaseauth',
+      'auth/callback',
+      'oauth',
+      'signin'
+    ];
+    
+    // URL이 외부 브라우저로 열어야 하는 패턴 중 하나와 일치하는지 확인
+    if (externalURLPatterns.some(pattern => url.includes(pattern))) {
+      console.log('[시스템 브라우저로 인증 URL 열기]', url);
+      shell.openExternal(url);
+      return { action: 'deny' };
+    }
+    
+    // 다른 모든 URL은 앱 내에서 열기
+    return { action: 'allow' };
+  });
+
+  // 브라우저 창에서 새 창으로 탐색하는 것을 감지
+  win.webContents.on('will-navigate', (event, url) => {
+    console.log('[페이지 탐색 요청]', url);
+    
+    // Firebase 인증 관련 URL인 경우 시스템 브라우저로 열기
+    if (url.includes('accounts.google.com') || 
+        url.includes('apis.google.com') || 
+        url.includes('oauth') || 
+        url.includes('signin')) {
+      event.preventDefault();
+      console.log('[외부 브라우저로 리다이렉트]', url);
+      shell.openExternal(url);
+    }
+  });
+
+  // 네트워크 요청 로깅
+  win.webContents.session.webRequest.onCompleted({ urls: ['<all_urls>'] }, (details) => {
+    if (details.url.includes('google') || 
+        details.url.includes('firebase') || 
+        details.url.includes('oauth') || 
+        details.url.includes('auth')) {
+      console.log(`[네트워크 요청 완료] ${details.statusCode} ${details.method} ${details.url}`);
+    }
+  });
 
   // Test active push message to Renderer-process.
   win.webContents.on('did-finish-load', () => {

@@ -7,19 +7,160 @@ import { InventoryManagement } from './renderer/components/inventory/InventoryMa
 import { OrderHistory } from './renderer/components/order/OrderHistory'
 import { SettingsPage } from './renderer/components/settings/SettingsPage'
 import { DataService, useGoogleSheetAutoSync, SyncStatus } from './firebase/dataService'
-import { getCurrentUser, GoogleToken } from './firebase/auth'
+import { getCurrentUser, GoogleToken, checkRedirectResult } from './firebase/auth'
+import { useAuth } from './firebase/AuthContext'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
-type TabType = 'order' | 'menu' | 'category' | 'inventory' | 'history' | 'settings'
+// 인증 콜백 처리 컴포넌트
+const AuthCallback = () => {
+  const [message, setMessage] = useState('인증 처리 중...');
+  
+  useEffect(() => {
+    // URL에서 토큰 파라미터 추출
+    const handleCallback = () => {
+      try {
+        const url = window.location.href;
+        console.log('콜백 URL 수신:', url);
+        
+        // 해시 파라미터에서 토큰 추출
+        if (url.includes('#access_token=')) {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const expiresIn = hashParams.get('expires_in');
+          
+          if (accessToken) {
+            // 토큰 저장
+            const token = {
+              accessToken,
+              expirationTime: new Date().getTime() + (parseInt(expiresIn || '3600') * 1000)
+            };
+            
+            localStorage.setItem('googleAuthToken', JSON.stringify(token));
+            setMessage('인증이 완료되었습니다. 잠시 후 메인 페이지로 이동합니다...');
+            
+            // 메인 페이지로 리디렉션
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 2000);
+          } else {
+            setMessage('인증 정보를 찾을 수 없습니다.');
+          }
+        } else {
+          setMessage('유효한 인증 응답이 없습니다.');
+        }
+      } catch (error) {
+        console.error('인증 콜백 처리 오류:', error);
+        setMessage('인증 처리 중 오류가 발생했습니다.');
+      }
+    };
+    
+    handleCallback();
+  }, []);
+  
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+      <div className="p-8 bg-white rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold mb-4">Google 인증</h1>
+        <p className="text-gray-700">{message}</p>
+      </div>
+    </div>
+  );
+};
 
-export default function App() {
+type TabType = 'order' | 'menu' | 'category' | 'inventory' | 'history' | 'settings' | 'debug'
+
+// AppContent - 메인 애플리케이션 컴포넌트
+const AppContent = () => {
   const [activeTab, setActiveTab] = useState<TabType>('order')
   const [token, setToken] = useState<GoogleToken | null>(null)
   const [isLoginRequired, setIsLoginRequired] = useState(false)
   const [showSyncTooltip, setShowSyncTooltip] = useState(false)
+  const [isRedirectChecking, setIsRedirectChecking] = useState(true)
+  const [logs, setLogs] = useState<string[]>([])
   const tooltipTimerRef = useRef<number | null>(null)
+  const logWindowRef = useRef<HTMLDivElement>(null)
+  const { refreshToken } = useAuth();
+  
+  // 콘솔 로그 가로채기
+  useEffect(() => {
+    if (window.electron) {
+      // 디버그 모드에서만 콘솔 로그 가로채기
+      const originalConsoleLog = console.log;
+      const originalConsoleError = console.error;
+      const originalConsoleWarn = console.warn;
+      
+      // 콘솔 로그 함수 대체
+      console.log = function(...args: any[]) {
+        setLogs(prev => [...prev, `[LOG] ${args.join(' ')}`]);
+        originalConsoleLog.apply(console, args);
+      };
+      
+      console.error = function(...args: any[]) {
+        setLogs(prev => [...prev, `[ERROR] ${args.join(' ')}`]);
+        originalConsoleError.apply(console, args);
+      };
+      
+      console.warn = function(...args: any[]) {
+        setLogs(prev => [...prev, `[WARN] ${args.join(' ')}`]);
+        originalConsoleWarn.apply(console, args);
+      };
+      
+      // 로그 최대 개수 제한 (성능 이슈 방지)
+      const MAX_LOGS = 1000;
+      if (logs.length > MAX_LOGS) {
+        setLogs(logs.slice(logs.length - MAX_LOGS));
+      }
+      
+      // 컴포넌트 언마운트 시 원래 콘솔 함수 복원
+      return () => {
+        console.log = originalConsoleLog;
+        console.error = originalConsoleError;
+        console.warn = originalConsoleWarn;
+      };
+    }
+  }, [logs.length]);
+  
+  // 로그 창이 업데이트될 때마다 스크롤을 맨 아래로 이동
+  useEffect(() => {
+    if (logWindowRef.current && activeTab === 'debug') {
+      logWindowRef.current.scrollTop = logWindowRef.current.scrollHeight;
+    }
+  }, [logs, activeTab]);
+  
+  // Firebase 인증 리디렉션 결과 확인
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        // Firebase 리디렉션 결과 확인
+        console.log('Firebase 리디렉션 결과 확인 중...');
+        const redirectResult = await checkRedirectResult();
+        
+        if (redirectResult) {
+          console.log('Firebase 리디렉션 인증 성공, 토큰 설정');
+          setToken(redirectResult);
+          
+          // 토큰 새로고침이 필요한 경우를 위해 useAuth에서 가져온 함수 사용
+          await refreshToken();
+        } else {
+          console.log('리디렉션 결과 없음');
+        }
+      } catch (error) {
+        console.error('리디렉션 결과 처리 오류:', error);
+      } finally {
+        setIsRedirectChecking(false);
+      }
+    };
+    
+    handleRedirectResult();
+  }, [refreshToken]);
   
   // 앱 시작 시 로그인 및 연동 상태 확인
   useEffect(() => {
+    // 리디렉션 체크가 끝날 때까지 기다림
+    if (isRedirectChecking) {
+      return;
+    }
+    
     const checkAuth = async () => {
       // 로컬스토리지에서 토큰 먼저 확인
       const storedToken = localStorage.getItem('googleAuthToken')
@@ -45,7 +186,7 @@ export default function App() {
     }
     
     checkAuth()
-  }, [])
+  }, [isRedirectChecking])
 
   // 구글 시트 자동 동기화 훅 사용 (10초마다 동기화)
   const syncStatus = useGoogleSheetAutoSync(token, true)
@@ -111,9 +252,60 @@ export default function App() {
       </div>
     );
   };
+  
+  // 디버그 로그 창 렌더링
+  const renderDebugLog = () => {
+    return (
+      <div className="p-4">
+        <h2 className="text-xl font-bold mb-4">디버그 로그</h2>
+        <button 
+          className="bg-blue-500 text-white px-4 py-2 rounded mb-2 hover:bg-blue-600"
+          onClick={() => setLogs([])}
+        >
+          로그 지우기
+        </button>
+        <button 
+          className="ml-2 bg-green-500 text-white px-4 py-2 rounded mb-2 hover:bg-green-600"
+          onClick={() => {
+            console.log('로그 테스트 메시지:', new Date().toISOString());
+          }}
+        >
+          테스트 로그 추가
+        </button>
+        <div 
+          ref={logWindowRef}
+          className="bg-gray-900 text-green-400 p-4 rounded h-[500px] overflow-y-auto font-mono text-sm"
+        >
+          {logs.length === 0 ? (
+            <div className="text-gray-500">로그가 없습니다...</div>
+          ) : (
+            logs.map((log, index) => (
+              <div key={index} className="whitespace-pre-wrap mb-1">
+                {log}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
+  
+  // 키보드 단축키 처리 (디버그 모드 토글)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Alt+D로 디버그 모드 토글
+      if (e.altKey && e.key === 'd') {
+        e.preventDefault();
+        setActiveTab(prev => prev === 'debug' ? 'order' : 'debug');
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
-    <MainLayout activeTab={activeTab} onTabChange={setActiveTab}>
+    <MainLayout activeTab={activeTab} onTabChange={setActiveTab} showDebugTab={!!window.electron}>
       {isLoginRequired && activeTab !== 'settings' && 
         <div className="p-4 mb-4 text-red-600 bg-red-100 rounded">
           구글 계정 로그인 및 스프레드시트 연동이 필요합니다. 설정 페이지로 이동하세요.
@@ -126,6 +318,20 @@ export default function App() {
       {activeTab === 'inventory' && <InventoryManagement />}
       {activeTab === 'history' && <OrderHistory />}
       {activeTab === 'settings' && <SettingsPage onLoginComplete={() => setIsLoginRequired(false)} />}
+      {activeTab === 'debug' && renderDebugLog()}
     </MainLayout>
-  )
+  );
+};
+
+// 메인 앱 컴포넌트 - 라우팅 설정
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/auth-callback" element={<AuthCallback />} />
+        <Route path="/" element={<AppContent />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }

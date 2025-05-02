@@ -33,13 +33,12 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
-    "electron": "^35.0.3",
-    "electron-builder": "^25.1.8",
     "firebase": "^11.6.0",
     "lucide-react": "^0.483.0",
     "node-thermal-printer": "^4.4.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-router-dom": "^7.5.3",
     "tailwind-merge": "^3.0.2",
     "usb": "^2.15.0",
     "vite-plugin-electron": "^0.29.0",
@@ -54,6 +53,8 @@
     "@typescript-eslint/parser": "^8.28.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "10.4.17",
+    "electron": "^35.0.3",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.23.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
@@ -69,7 +70,9 @@
     "onlyBuiltDependencies": [
       "electron",
       "esbuild",
-      "usb"
+      "usb",
+      "@firebase/util",
+      "protobufjs"
     ]
   }
 }

@@ -25,7 +25,7 @@ interface ElectronAPI {
   }
   orders: {
     loadOrdersFromJson: () => Promise<any[]>
-    saveOrdersToJson: (orders: any[]) => Promise<boolean>
+    saveOrdersToJson: (orders: any[]) => Promise<void>
   }
   coupon: {
     loadCouponsFromJson: () => Promise<Coupon[]>
@@ -39,8 +39,26 @@ interface ElectronAPI {
   // 구글 관련 API 제거 (Firebase로 대체됨)
 }
 
+// electronIPC 인터페이스 정의
+interface ElectronIPC {
+  ipcRenderer: {
+    send: (channel: string, data: any) => void
+    sendSync: (channel: string, ...args: any[]) => any
+    on: (channel: string, func: (...args: any[]) => void) => void
+    once: (channel: string, func: (...args: any[]) => void) => void
+    invoke: (channel: string, data?: any) => Promise<any>
+  }
+  fs: {
+    readFile: (filePath: string) => Promise<string>
+    writeFile: (filePath: string, content: string) => Promise<void>
+    ensureDir: (dirPath: string) => Promise<void>
+  }
+}
+
 declare global {
   interface Window {
     electronAPI: ElectronAPI
+    electron: boolean // Electron 환경인지 확인하는 플래그
+    electronIPC: ElectronIPC // IPC 통신용 API 추가
   }
 } 

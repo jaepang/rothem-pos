@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename)
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: './',
   plugins: [
     react(),
     electron([
@@ -53,4 +54,15 @@ export default defineConfig({
       external: ['electron'],
     },
   },
+  server: {
+    host: true, // --host 플래그와 동일한 효과
+    port: 5173, // 기본 포트
+    strictPort: true, // 포트가 사용 중이면 오류 발생
+    cors: true, // CORS 활성화
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173
+    }
+  }
 }) 
