@@ -43,12 +43,12 @@ export function InventoryManagement() {
     // 재고 수량 업데이트
     const updatedInventory = updateInventoryQuantity(inventory, itemId, newQuantity)
     setInventory(updatedInventory)
-      await DataService.saveData('inventory', updatedInventory, token || undefined)
+      await DataService.saveData('inventory', updatedInventory)
 
     // 메뉴 품절 상태 업데이트
     const updatedMenus = updateMenuSoldOutStatus(updatedInventory, menus)
     setMenus(updatedMenus)
-      await DataService.saveData('menu', updatedMenus, token || undefined)
+      await DataService.saveData('menu', updatedMenus)
     } catch (error) {
       console.error('재고 업데이트 실패:', error)
       alert('재고 업데이트 중 오류가 발생했습니다.')
@@ -77,12 +77,12 @@ export function InventoryManagement() {
     try {
       const importedInventory = await importInventoryFromExcel(file)
       setInventory(importedInventory)
-      await DataService.saveData('inventory', importedInventory, token || undefined)
+      await DataService.saveData('inventory', importedInventory)
       
       // 메뉴 품절 상태 업데이트
       const updatedMenus = updateMenuSoldOutStatus(importedInventory, menus)
       setMenus(updatedMenus)
-      await DataService.saveData('menu', updatedMenus, token || undefined)
+      await DataService.saveData('menu', updatedMenus)
       
       alert(`${importedInventory.length}개의 재고 항목을 가져왔습니다.`)
     } catch (error) {
@@ -116,12 +116,12 @@ export function InventoryManagement() {
     }
 
     setInventory(updatedInventory)
-      await DataService.saveData('inventory', updatedInventory, token || undefined)
+      await DataService.saveData('inventory', updatedInventory)
 
     // 메뉴 품절 상태 업데이트
     const updatedMenus = updateMenuSoldOutStatus(updatedInventory, menus)
     setMenus(updatedMenus)
-      await DataService.saveData('menu', updatedMenus, token || undefined)
+      await DataService.saveData('menu', updatedMenus)
 
     setIsAddModalOpen(false)
     setSelectedItem(undefined)
@@ -137,12 +137,12 @@ export function InventoryManagement() {
     try {
     const updatedInventory = inventory.filter(item => item.id !== itemId)
     setInventory(updatedInventory)
-      await DataService.saveData('inventory', updatedInventory, token || undefined)
+      await DataService.saveData('inventory', updatedInventory)
 
     // 메뉴 품절 상태 업데이트
     const updatedMenus = updateMenuSoldOutStatus(updatedInventory, menus)
     setMenus(updatedMenus)
-      await DataService.saveData('menu', updatedMenus, token || undefined)
+      await DataService.saveData('menu', updatedMenus)
     } catch (error) {
       console.error('재고 항목 삭제 실패:', error)
       alert('재고 항목을 삭제하는데 실패했습니다.')
