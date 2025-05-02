@@ -22,7 +22,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           <h1 className="text-2xl font-bold flex items-center">
             Rothem POS
             <img 
-              src="/images/tree.png" 
+              src="app-public://images/tree.png" 
               alt="tree" 
               className="h-[0.85em] w-auto ml-1.5 -translate-y-[1px]" 
             />

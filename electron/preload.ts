@@ -74,8 +74,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   }
 })
 
-// Electron 환경 플래그 설정
-contextBridge.exposeInMainWorld('electron', true)
+// Electron 환경 설정
+contextBridge.exposeInMainWorld('electron', {
+  isElectron: true,
+  fs: {
+    readFile: (filePath: string) => ipcRenderer.invoke('fs:readFile', filePath),
+    writeFile: (filePath: string, content: string) => ipcRenderer.invoke('fs:writeFile', { filePath, content }),
+    ensureDir: (dirPath: string) => ipcRenderer.invoke('fs:ensureDir', dirPath)
+  },
+  relaunch: () => ipcRenderer.invoke('app:relaunch'),
+  getAppVersion: () => ipcRenderer.invoke('app:getVersion')
+})
 
 // IPC 통신용 API
 contextBridge.exposeInMainWorld('electronIPC', {
@@ -102,19 +111,6 @@ contextBridge.exposeInMainWorld('electronIPC', {
   // Promise 기반 통신 (응답을 기다림)
   invoke: (channel: string, data?: any) => {
     return ipcRenderer.invoke(channel, data)
-  }
-})
-
-// 파일 시스템 작업 API
-contextBridge.exposeInMainWorld('fileSystem', {
-  // 메뉴 이미지 저장
-  saveMenuImage: async (buffer: ArrayBuffer, menuId: string) => {
-    return ipcRenderer.invoke('fs:saveImage', buffer, menuId)
-  },
-  
-  // 메뉴 이미지 삭제
-  deleteMenuImage: async (imageUrl: string) => {
-    return ipcRenderer.invoke('fs:deleteImage', imageUrl)
   }
 })
 

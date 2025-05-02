@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell, protocol } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promises as fs } from 'node:fs'
@@ -6,6 +6,7 @@ import fs_sync from 'node:fs'
 import { ThermalPrinter, PrinterTypes } from 'node-thermal-printer'
 import { URL } from 'node:url'
 import { release } from 'node:os'
+import { net } from 'electron'
 const usb = require('usb')
 
 const __filename = fileURLToPath(import.meta.url)
@@ -20,7 +21,11 @@ ipcMain.on('get-user-data-path', (event) => {
   event.returnValue = app.getPath('userData')
 })
 
-const IMAGE_DIR = path.join(process.cwd(), 'public', 'images', 'menu')
+const IMAGES_BASE_DIR = app.isPackaged 
+  ? path.join(app.getPath('userData'), 'images')
+  : path.join(process.cwd(), 'public', 'images')
+  
+const IMAGE_DIR = path.join(IMAGES_BASE_DIR, 'menu')
 
 // File system handlers
 ipcMain.handle('fs:saveImage', async (_, buffer: ArrayBuffer, menuId: string) => {
@@ -36,8 +41,12 @@ ipcMain.handle('fs:saveImage', async (_, buffer: ArrayBuffer, menuId: string) =>
     // 파일 저장
     await fs.writeFile(filePath, Buffer.from(buffer))
     
-    // 상대 경로 반환 (public 기준)
-    return `/images/menu/${fileName}`
+    // 이미지 경로 반환
+    const imagePath = app.isPackaged
+      ? `app-image://menu/${fileName}` // 패키지된 앱에서의 프로토콜 경로
+      : `/images/menu/${fileName}` // 개발 환경에서의 상대 경로
+      
+    return imagePath
   } catch (error) {
     console.error('이미지 저장 실패:', error)
     throw error
@@ -59,15 +68,19 @@ ipcMain.handle('fs:deleteImage', async (_, imageUrl: string) => {
   }
 })
 
-const MENU_FILE_PATH = path.join(process.cwd(), 'data', 'menu.json')
-const INVENTORY_FILE_PATH = path.join(process.cwd(), 'data', 'inventory.json')
-const ORDERS_FILE_PATH = path.join(process.cwd(), 'data', 'orders.json')
-const COUPONS_FILE_PATH = path.join(process.cwd(), 'data', 'coupons.json')
+// 경로 설정
+const DATA_DIR = path.join(app.getPath('userData'), 'data')
+const MENU_FILE_PATH = path.join(DATA_DIR, 'menu.json')
+const INVENTORY_FILE_PATH = path.join(DATA_DIR, 'inventory.json')
+const ORDERS_FILE_PATH = path.join(DATA_DIR, 'orders.json')
+const COUPONS_FILE_PATH = path.join(DATA_DIR, 'coupons.json')
 
 // IPC 핸들러 등록
 ipcMain.handle('menu:loadFromJson', async () => {
   try {
     if (!fs_sync.existsSync(MENU_FILE_PATH)) {
+      // 메뉴 파일이 없으면 빈 배열 생성 후 반환
+      await fs.writeFile(MENU_FILE_PATH, JSON.stringify([], null, 2))
       return []
     }
     const data = await fs.readFile(MENU_FILE_PATH, 'utf-8')
@@ -368,8 +381,6 @@ ipcMain.handle('printer:printOrder', async (_, order: any) => {
 })
 
 // 파일 시스템 핸들러
-const DATA_DIR = path.join(app.getPath('userData'), 'data')
-
 ipcMain.handle('fs:ensureDir', async (_, dirPath: string) => {
   const fullPath = path.join(DATA_DIR, dirPath)
   try {
@@ -537,6 +548,16 @@ ipcMain.handle('auth:google-oauth', async (event, authURL) => {
   }
 });
 
+// 앱 정보와 유틸리티 핸들러
+ipcMain.handle('app:relaunch', () => {
+  app.relaunch();
+  app.exit(0);
+});
+
+ipcMain.handle('app:getVersion', () => {
+  return app.getVersion();
+});
+
 // The built directory structure
 //
 // ├─┬─┬ dist
@@ -554,6 +575,10 @@ let win: BrowserWindow | null
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 
+// 로드 오류 및 앱 상태 추적용 변수
+let isAppReady = false
+let loadErrorOccurred = false
+
 async function createWindow() {
   win = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
@@ -564,20 +589,117 @@ async function createWindow() {
     },
     width: 1200,
     height: 800,
+    // 로딩 중에는 화면을 표시하지 않음
+    show: false
   })
 
-  // 개발자 도구 활성화 (개발 중에만)
-  if (VITE_DEV_SERVER_URL) {
-    win.webContents.openDevTools();
-  } else {
-    // 빌드된 앱에서도 개발자 도구 활성화 (인증 URL 확인용)
-    win.webContents.openDevTools();
-  }
+  // 개발자 도구는 항상 열어서 디버깅 가능하게 함
+  win.webContents.openDevTools();
+  
+  // 윈도우가 준비되면 표시
+  win.once('ready-to-show', () => {
+    if (!loadErrorOccurred) {
+      win?.show()
+    }
+  })
 
-  // Firebase 요청 URL 로깅
-  win.webContents.session.webRequest.onBeforeRequest({ urls: ['*://*.googleapis.com/*', '*://*.google.com/*', '*://*.firebaseapp.com/*', '*://*.firebase.com/*'] }, 
+  // Test active push message to Renderer-process.
+  win.webContents.on('did-finish-load', () => {
+    win?.webContents.send('main-process-message', (new Date).toLocaleString())
+    console.log('페이지 로드 완료!')
+  })
+
+  // 페이지 로드 오류 처리
+  win.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    loadErrorOccurred = true
+    console.error(`페이지 로드 실패: ${errorCode} ${errorDescription}, URL: ${validatedURL}, isMainFrame: ${isMainFrame}`);
+    
+    // 로드 실패 시 기본 페이지 표시
+    if (isMainFrame && isAppReady) {
+      win?.loadFile(path.join(__dirname, 'error.html'))
+      .catch(err => console.error('에러 페이지 로드 실패:', err))
+    }
+  })
+
+  // 렌더러 프로세스 충돌 감지
+  win.webContents.on('render-process-gone', (event, details) => {
+    console.error('렌더러 프로세스 종료:', details.reason, details.exitCode);
+  })
+
+  // 렌더러 프로세스 응답 없음 감지
+  win.webContents.on('unresponsive', () => {
+    console.error('렌더러 프로세스가 응답하지 않습니다.');
+  })
+
+  // 정적 파일 요청 처리 (이미지 로드 문제 해결)
+  win.webContents.session.webRequest.onBeforeRequest(
+    { urls: ['*://*/*', 'file://*'] },
     (details, callback) => {
-      console.log('[Firebase URL 요청]', details.method, details.url);
+      // 데이터 URL인 경우 변환하지 않음
+      if (details.url.startsWith('data:')) {
+        callback({});
+        return;
+      }
+
+      try {
+        if (details.url.startsWith('file://')) {
+          // file:// 프로토콜 요청 처리
+          const urlPath = details.url.replace('file://', '');
+          
+          // 경로에 /images/가 포함되어 있는지 확인
+          if (urlPath.includes('/images/')) {
+            console.log(`[file 프로토콜 요청 감지] ${details.url}`);
+            
+            // /images/tree.png와 같은 패턴인지 확인
+            if (urlPath.includes('tree.png')) {
+              console.log(`[tree.png 변환] -> app-public://images/tree.png`);
+              callback({ redirectURL: `app-public://images/tree.png` });
+              return;
+            }
+            
+            // 메뉴 이미지인지 확인
+            if (urlPath.includes('/images/menu/')) {
+              // 파일 이름만 추출
+              const fileName = urlPath.split('/').pop();
+              console.log(`[메뉴 이미지 변환] -> app-image://menu/${fileName}`);
+              callback({ redirectURL: `app-image://menu/${fileName}` });
+              return;
+            }
+            
+            // 기타 이미지
+            const pathParts = urlPath.split('/');
+            const imageIndex = pathParts.findIndex(part => part === 'images');
+            if (imageIndex >= 0) {
+              const imagePath = pathParts.slice(imageIndex).join('/');
+              console.log(`[일반 이미지 변환] -> app-public://${imagePath}`);
+              callback({ redirectURL: `app-public://${imagePath}` });
+              return;
+            }
+          }
+        } else {
+          // http나 https 요청 처리 (기존 로직)
+          try {
+            const urlObj = new URL(details.url);
+            
+            if (urlObj.pathname.startsWith('/images/')) {
+              if (urlObj.pathname.startsWith('/images/menu/')) {
+                console.log(`[이미지 요청 변환] ${urlObj.pathname} -> app-image://${urlObj.pathname.substring(8)}`);
+                callback({ redirectURL: `app-image://${urlObj.pathname.substring(8)}` });
+              } else {
+                console.log(`[이미지 요청 변환] ${urlObj.pathname} -> app-public://${urlObj.pathname.substring(1)}`);
+                callback({ redirectURL: `app-public://${urlObj.pathname.substring(1)}` });
+              }
+              return;
+            }
+          } catch (innerError) {
+            console.error('URL 파싱 오류:', innerError, details.url);
+          }
+        }
+      } catch (error) {
+        console.error('URL 처리 오류:', error, details.url);
+      }
+      
+      // 나머지 요청은 그대로 처리
       callback({});
     }
   );
@@ -615,57 +737,127 @@ async function createWindow() {
     return { action: 'allow' };
   });
 
-  // 브라우저 창에서 새 창으로 탐색하는 것을 감지
-  win.webContents.on('will-navigate', (event, url) => {
-    console.log('[페이지 탐색 요청]', url);
-    
-    // Firebase 인증 관련 URL인 경우 시스템 브라우저로 열기
-    if (url.includes('accounts.google.com') || 
-        url.includes('apis.google.com') || 
-        url.includes('oauth') || 
-        url.includes('signin')) {
-      event.preventDefault();
-      console.log('[외부 브라우저로 리다이렉트]', url);
-      shell.openExternal(url);
-    }
-  });
-
-  // 네트워크 요청 로깅
-  win.webContents.session.webRequest.onCompleted({ urls: ['<all_urls>'] }, (details) => {
-    if (details.url.includes('google') || 
-        details.url.includes('firebase') || 
-        details.url.includes('oauth') || 
-        details.url.includes('auth')) {
-      console.log(`[네트워크 요청 완료] ${details.statusCode} ${details.method} ${details.url}`);
-    }
-  });
-
-  // Test active push message to Renderer-process.
-  win.webContents.on('did-finish-load', () => {
-    win?.webContents.send('main-process-message', (new Date).toLocaleString())
-  })
+  console.log('앱 환경:', app.isPackaged ? '프로덕션' : '개발')
+  console.log('DIST 경로:', process.env.DIST)
+  console.log('PUBLIC 경로:', process.env.VITE_PUBLIC)
+  console.log('USER DATA 경로:', app.getPath('userData'))
+  console.log('DATA_DIR 경로:', DATA_DIR)
+  console.log('DEV SERVER URL:', VITE_DEV_SERVER_URL || '없음')
 
   if (VITE_DEV_SERVER_URL) {
+    console.log('개발 서버 URL로 로드 시도:', VITE_DEV_SERVER_URL)
     win.loadURL(VITE_DEV_SERVER_URL)
+    .catch(err => {
+      console.error('개발 서버 로드 실패:', err)
+    })
   } else {
-    // win.loadFile('dist/index.html')
-    win.loadFile(path.join(process.env.DIST, 'index.html'))
+    const indexHtmlPath = path.join(process.env.DIST, 'index.html')
+    console.log('프로덕션 빌드 파일 로드 시도:', indexHtmlPath)
+    
+    // index.html 파일이 존재하는지 확인
+    try {
+      fs_sync.accessSync(indexHtmlPath)
+      console.log('index.html 파일 존재 확인됨')
+    } catch (err) {
+      console.error('index.html 파일이 존재하지 않음:', err)
+    }
+    
+    win.loadFile(indexHtmlPath)
+    .catch(err => {
+      console.error('프로덕션 빌드 로드 실패:', err)
+    })
   }
 }
 
+// 앱 초기화 및 라이프사이클 관리
+app.whenReady().then(() => {
+  isAppReady = true;
+  console.log('앱 준비 완료');
+
+  // 먼저 필요한 데이터 디렉토리 생성
+  try {
+    if (!fs_sync.existsSync(DATA_DIR)) {
+      fs_sync.mkdirSync(DATA_DIR, { recursive: true });
+      console.log('데이터 디렉토리 생성됨:', DATA_DIR);
+    }
+    
+    if (!fs_sync.existsSync(IMAGE_DIR)) {
+      fs_sync.mkdirSync(IMAGE_DIR, { recursive: true });
+      console.log('이미지 디렉토리 생성됨:', IMAGE_DIR);
+    }
+  } catch (error) {
+    console.error('디렉토리 생성 오류:', error);
+  }
+
+  // 앱이 패키지된 경우와 개발 모드에서의 경로 로깅
+  const resourcesPath = app.isPackaged 
+    ? path.join(process.resourcesPath, 'public')
+    : path.join(process.cwd(), 'public');
+  
+  console.log('앱 패키지 모드:', app.isPackaged ? '프로덕션' : '개발');
+  console.log('리소스 경로:', resourcesPath);
+  console.log('tree.png 경로 예상:', path.join(resourcesPath, 'images', 'tree.png'));
+  
+  // tree.png 파일 존재 확인
+  try {
+    const treePngPath = path.join(resourcesPath, 'images', 'tree.png');
+    const exists = fs_sync.existsSync(treePngPath);
+    console.log('tree.png 파일 존재:', exists, treePngPath);
+  } catch (error) {
+    console.error('파일 존재 확인 오류:', error);
+  }
+
+  // 메뉴 이미지용 프로토콜 등록
+  protocol.registerFileProtocol('app-image', (request, callback) => {
+    const url = request.url.slice('app-image://'.length);
+    try {
+      return callback({ path: path.join(IMAGES_BASE_DIR, url) });
+    } catch (error) {
+      console.error('이미지 프로토콜 처리 오류:', error);
+      return callback({ error: -2 }); // -2는 파일 못찾음 에러
+    }
+  });
+
+  // 정적 파일(public 폴더) 프로토콜 등록
+  protocol.registerFileProtocol('app-public', (request, callback) => {
+    const url = request.url.slice('app-public://'.length);
+    try {
+      // app.isPackaged가 true면 resources/public 폴더 사용
+      // 개발 모드에서는 public 폴더 사용
+      const publicPath = app.isPackaged 
+        ? path.join(process.resourcesPath, 'public') 
+        : path.join(process.cwd(), 'public');
+      
+      console.log('정적 파일 요청:', url);
+      const filePath = path.join(publicPath, url);
+      console.log('정적 파일 경로:', filePath);
+      
+      // 파일 존재 확인
+      if (fs_sync.existsSync(filePath)) {
+        console.log('파일 존재함:', filePath);
+      } else {
+        console.error('파일이 존재하지 않음:', filePath);
+      }
+      
+      return callback({ path: filePath });
+    } catch (error) {
+      console.error('정적 파일 프로토콜 처리 오류:', error);
+      return callback({ error: -2 });
+    }
+  });
+
+  createWindow();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    app.quit()
+    app.quit();
   }
-})
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
-})
-
-app.whenReady().then(createWindow)
+});
 
 // 프린터 핸들러
 ipcMain.handle('printer:getConfig', async () => {

@@ -53,12 +53,16 @@ export default defineConfig({
     rollupOptions: {
       external: ['electron'],
     },
+    emptyOutDir: true,
+    assetsDir: 'assets',
+    copyPublicDir: true,
   },
+  publicDir: 'public',
   server: {
-    host: true, // --host 플래그와 동일한 효과
-    port: 5173, // 기본 포트
-    strictPort: true, // 포트가 사용 중이면 오류 발생
-    cors: true, // CORS 활성화
+    host: true,
+    port: 5173,
+    strictPort: true,
+    cors: true,
     hmr: {
       protocol: 'ws',
       host: 'localhost',
