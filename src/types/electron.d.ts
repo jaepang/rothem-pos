@@ -1,6 +1,7 @@
 import { MenuList } from '../types/menu'
 import { Order } from '../types/order'
 import { InventoryList } from '../types/inventory'
+import { Coupon } from '../shared/types/coupon'
 
 // 구글 관련 타입 정의 삭제 (Firebase로 대체됨)
 
@@ -25,6 +26,10 @@ interface ElectronAPI {
   orders: {
     loadOrdersFromJson: () => Promise<any[]>
     saveOrdersToJson: (orders: any[]) => Promise<boolean>
+  }
+  coupon: {
+    loadCouponsFromJson: () => Promise<Coupon[]>
+    saveCouponsToJson: (coupons: Coupon[]) => Promise<boolean>
   }
   printer: {
     initialize: () => Promise<boolean>

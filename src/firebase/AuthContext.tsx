@@ -92,12 +92,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (user) {
         setIsLoggedIn(true);
         try {
-          const newToken = await signInWithGoogle();
-          setToken(newToken);
-          setTokenExpired(false);
-          console.log('[Auth] 초기 토큰 획득 성공');
+          const savedTokenStr = localStorage.getItem('googleAuthToken');
+          if (savedTokenStr) {
+            const savedToken = JSON.parse(savedTokenStr) as GoogleToken;
+            setToken(savedToken);
+            setTokenExpired(checkTokenExpired(savedToken));
+            console.log('[Auth] 저장된 토큰 사용');
+          } else {
+            console.log('[Auth] 저장된 토큰 없음, 토큰 만료 상태로 설정');
+            setTokenExpired(true);
+          }
         } catch (error) {
-          console.error('[Auth] 초기 토큰 획득 실패:', error);
+          console.error('[Auth] 토큰 확인 실패:', error);
           setTokenExpired(true);
         }
       }

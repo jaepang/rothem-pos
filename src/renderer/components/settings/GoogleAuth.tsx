@@ -33,11 +33,16 @@ export const GoogleAuth = ({ onLoginComplete }: GoogleAuthProps) => {
     if (user) {
       setIsLoggedIn(true)
       try {
-        // 로그인 상태가 유지되고 있을 때 필요한 토큰 가져오기
-        const newToken = await signInWithGoogle()
-        setToken(newToken)
-        if (onLoginComplete) {
-          onLoginComplete();
+        // 로컬스토리지에서 토큰 가져오기
+        const savedTokenStr = localStorage.getItem('googleAuthToken')
+        if (savedTokenStr) {
+          const savedToken = JSON.parse(savedTokenStr) as GoogleToken
+          setToken(savedToken)
+          // 토큰이 있으면 스프레드시트 목록 불러오기
+          await loadSheetsList(savedToken)
+          if (onLoginComplete) {
+            onLoginComplete();
+          }
         }
       } catch (error) {
         console.error('토큰 가져오기 실패:', error)

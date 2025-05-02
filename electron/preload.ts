@@ -34,6 +34,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveOrdersToJson: (orders: any) => 
       ipcRenderer.invoke('orders:saveToJson', orders),
   },
+  coupon: {
+    loadCouponsFromJson: () => 
+      ipcRenderer.invoke('coupon:loadFromJson'),
+    saveCouponsToJson: (coupons: any) => 
+      ipcRenderer.invoke('coupon:saveToJson', coupons),
+  },
   printer: {
     initialize: () => 
       ipcRenderer.invoke('printer:initialize'),
