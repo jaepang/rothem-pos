@@ -52,7 +52,7 @@ export const useMenuManagement = () => {
     try {
       const importedMenus = await importMenuFromExcel(file)
       setMenus(importedMenus)
-      await DataService.saveData('menu', importedMenus, token || undefined)
+      await DataService.saveData('menu', importedMenus)
       
       // 카테고리 업데이트
       const loadedCategories = await loadCategories(importedMenus)
@@ -73,7 +73,7 @@ export const useMenuManagement = () => {
           : menu
     )
     setMenus(updatedMenus)
-      await DataService.saveData('menu', updatedMenus, token || undefined)
+      await DataService.saveData('menu', updatedMenus)
     } catch (error) {
       console.error('메뉴 품절 상태 변경 실패:', error)
       alert('메뉴 품절 상태를 변경하는데 실패했습니다.')
@@ -90,7 +90,7 @@ export const useMenuManagement = () => {
           : menu
       )
       setMenus(updatedMenus)
-        await DataService.saveData('menu', updatedMenus, token || undefined)
+        await DataService.saveData('menu', updatedMenus)
     } else {
       // 새 메뉴 추가
       const newMenu = {
@@ -99,7 +99,7 @@ export const useMenuManagement = () => {
       }
       const updatedMenus = [...menus, newMenu]
       setMenus(updatedMenus)
-        await DataService.saveData('menu', updatedMenus, token || undefined)
+        await DataService.saveData('menu', updatedMenus)
     }
     setIsAddModalOpen(false)
     setSelectedMenu(undefined)
@@ -123,7 +123,7 @@ export const useMenuManagement = () => {
       try {
       const updatedMenus = deleteMenuItem(menu, menus)
       setMenus(updatedMenus)
-        await DataService.saveData('menu', updatedMenus, token || undefined)
+        await DataService.saveData('menu', updatedMenus)
       } catch (error) {
         console.error('메뉴 삭제 실패:', error)
         alert('메뉴를 삭제하는데 실패했습니다.')

@@ -77,7 +77,7 @@ export const useOrders = (isPrinterConnected: boolean) => {
   // 주문 저장 헬퍼 함수
   const saveOrders = async (updatedOrders: Order[]) => {
     try {
-      await DataService.saveData('orders', updatedOrders, token || undefined)
+      await DataService.saveData('orders', updatedOrders)
     } catch (error) {
       console.error('주문 데이터 저장 실패:', error)
       throw error
