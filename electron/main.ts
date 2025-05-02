@@ -60,6 +60,7 @@ ipcMain.handle('fs:deleteImage', async (_, imageUrl: string) => {
 const MENU_FILE_PATH = path.join(process.cwd(), 'data', 'menu.json')
 const INVENTORY_FILE_PATH = path.join(process.cwd(), 'data', 'inventory.json')
 const ORDERS_FILE_PATH = path.join(process.cwd(), 'data', 'orders.json')
+const COUPONS_FILE_PATH = path.join(process.cwd(), 'data', 'coupons.json')
 
 // IPC 핸들러 등록
 ipcMain.handle('menu:loadFromJson', async () => {
@@ -141,6 +142,71 @@ ipcMain.handle('orders:saveToJson', async (_, orders) => {
     return true
   } catch (error) {
     console.error('주문 데이터 저장 실패:', error)
+    return false
+  }
+})
+
+// 선불권 관련 IPC 핸들러
+ipcMain.handle('coupon:loadFromJson', async () => {
+  try {
+    if (!fs_sync.existsSync(COUPONS_FILE_PATH)) {
+      // 선불권 파일이 존재하지 않으면 빈 배열 반환
+      await fs.writeFile(COUPONS_FILE_PATH, JSON.stringify([], null, 2))
+      return []
+    }
+    const data = await fs.readFile(COUPONS_FILE_PATH, 'utf-8')
+    const coupons = JSON.parse(data)
+    
+    // balance 필드 검증 및 보완
+    const validatedCoupons = coupons.map((coupon: any) => {
+      // balance가 없거나 null이면 amount로 설정
+      if (coupon.balance === undefined || coupon.balance === null) {
+        console.log(`[Electron] 선불권 ID: ${coupon.id}, 이름: ${coupon.code}의 balance 필드 누락, amount(${coupon.amount})로 설정`)
+        return {
+          ...coupon,
+          balance: coupon.amount
+        }
+      }
+      return coupon
+    })
+    
+    // 변경된 내용이 있으면 파일에 다시 저장
+    if (JSON.stringify(coupons) !== JSON.stringify(validatedCoupons)) {
+      console.log('[Electron] 선불권 데이터 balance 필드 보완 후 저장')
+      await fs.writeFile(COUPONS_FILE_PATH, JSON.stringify(validatedCoupons, null, 2))
+    }
+    
+    return validatedCoupons
+  } catch (error) {
+    console.error('선불권 데이터 로드 실패:', error)
+    return []
+  }
+})
+
+ipcMain.handle('coupon:saveToJson', async (_, coupons) => {
+  try {
+    const dirPath = path.dirname(COUPONS_FILE_PATH)
+    if (!fs_sync.existsSync(dirPath)) {
+      await fs.mkdir(dirPath, { recursive: true })
+    }
+
+    // balance 필드 검증 및 보완
+    const validatedCoupons = coupons.map((coupon: any) => {
+      // balance가 없거나 null이면 amount로 설정
+      if (coupon.balance === undefined || coupon.balance === null) {
+        console.log(`[Electron] 저장 과정: 선불권 ID: ${coupon.id}, 이름: ${coupon.code}의 balance 필드 누락, amount(${coupon.amount})로 자동 설정`)
+        return {
+          ...coupon,
+          balance: coupon.amount
+        }
+      }
+      return coupon
+    })
+
+    await fs.writeFile(COUPONS_FILE_PATH, JSON.stringify(validatedCoupons, null, 2))
+    return true
+  } catch (error) {
+    console.error('선불권 데이터 저장 실패:', error)
     return false
   }
 })

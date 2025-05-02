@@ -382,6 +382,7 @@ interface SheetMappings {
   menu: ColumnMapping;
   inventory: ColumnMapping;
   orders: ColumnMapping;
+  coupons: ColumnMapping;
   [key: string]: ColumnMapping;
 }
 
@@ -432,6 +433,20 @@ const columnMappings: SheetMappings = {
     tableNumber: '테이블번호',
     completedAt: '완료시간',
     printed: '출력여부'
+  },
+  
+  // 쿠폰(선불권) 데이터 컬럼 매핑
+  coupons: {
+    id: '선불권ID',
+    code: '선불권이름',
+    amount: '초기금액',
+    balance: '잔액',
+    isUsed: '사용완료여부',
+    createdAt: '생성일시',
+    usedAt: '사용일시',
+    userId: '사용자ID',
+    createdBy: '생성자정보',
+    usedBy: '사용자정보'
   }
 };
 
@@ -448,19 +463,54 @@ export const convertJsonToSheetData = (jsonData: any[], sheetName: string = 'men
     return [[]];
   }
   
+  console.log(`[SheetService] ${sheetName} 데이터 변환 시작 (${jsonData.length}개 항목)`);
+  
+  // 필드 검증 및 보완 (coupons 데이터인 경우)
+  if (sheetName === 'coupons') {
+    jsonData = jsonData.map((item, index) => {
+      // balance 필드 확인 및 보완
+      if (item.balance === undefined || item.balance === null) {
+        console.warn(`[SheetService] 쿠폰 #${index+1}(${item.code})의 balance 필드 누락, amount 값으로 설정`);
+        return {
+          ...item,
+          balance: item.amount
+        };
+      }
+      return item;
+    });
+  }
+  
   // 헤더 행 (모든 키 추출)
   const keys = Object.keys(jsonData[0]);
+  console.log(`[SheetService] ${sheetName} 데이터의 키 목록:`, keys);
   
   // 해당 시트에 대한 매핑 가져오기 (없으면 기본 매핑 사용)
   const mapping = columnMappings[sheetName as keyof typeof columnMappings] || {};
   
   // 키를 한국어 컬럼명으로 변환 (매핑이 없는 경우 원래 키 사용)
-  const headers = keys.map(key => mapping[key] || key);
+  const headers = keys.map(key => {
+    const koreanName = mapping[key];
+    if (!koreanName && sheetName === 'coupons') {
+      console.warn(`[SheetService] 주의: '${key}' 필드에 대한 한국어 매핑이 없습니다.`);
+    }
+    return koreanName || key;
+  });
+  
+  console.log(`[SheetService] ${sheetName} 최종 헤더:`, headers);
   
   // 데이터 행 추가 (정제 과정 포함)
-  const rows = jsonData.map(item => 
-    keys.map(key => sanitizeValue(item[key]))
-  );
+  const rows = jsonData.map((item, rowIndex) => {
+    return keys.map(key => {
+      const value = item[key];
+      
+      // coupons 데이터의 경우 중요 필드 로깅
+      if (sheetName === 'coupons' && (key === 'balance' || key === 'amount')) {
+        console.log(`[SheetService] 쿠폰 #${rowIndex+1}, ${key}: ${value}`);
+      }
+      
+      return sanitizeValue(value);
+    });
+  });
   
   // 헤더와 데이터 결합
   return [headers, ...rows];

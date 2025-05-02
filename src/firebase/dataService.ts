@@ -3,7 +3,7 @@ import { GoogleToken } from './auth';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 // 앱 데이터 타입
-export type DataType = 'menu' | 'inventory' | 'orders';
+export type DataType = 'menu' | 'inventory' | 'orders' | 'coupons';
 
 // 자동 동기화 상태
 export interface SyncStatus {
@@ -50,6 +50,9 @@ export const DataService = {
         case 'orders':
           data = await window.electronAPI.orders.loadOrdersFromJson();
           break;
+        case 'coupons':
+          data = await window.electronAPI.coupon.loadCouponsFromJson();
+          break;
       }
       
       console.log(`[DataService] JSON 파일에서 ${type} 데이터 ${data.length}개 로드 완료`);
@@ -77,6 +80,9 @@ export const DataService = {
         case 'orders':
           await window.electronAPI.orders.saveOrdersToJson(data);
           break;
+        case 'coupons':
+          await window.electronAPI.coupon.saveCouponsToJson(data);
+          break;
       }
       console.log(`[DataService] JSON 파일에 ${type} 데이터 저장 완료`);
       return true;
@@ -99,6 +105,21 @@ export const DataService = {
     
     try {
       console.log(`[DataService] 구글 시트에 ${type} 데이터 동기화 시작`);
+      
+      // 디버깅: 쿠폰 데이터의 경우 balance 필드 확인
+      if (type === 'coupons') {
+        console.log(`[DataService] 쿠폰 데이터 동기화 검사 - 총 ${data.length}개 항목`);
+        data.forEach((coupon, index) => {
+          console.log(`[DataService] 쿠폰 #${index+1} - ID: ${coupon.id}, 이름: ${coupon.code}, 잔액: ${coupon.balance}, 초기금액: ${coupon.amount}`);
+          if (coupon.balance === undefined || coupon.balance === null) {
+            console.warn(`[DataService] 경고: 쿠폰 #${index+1}의 balance 필드가 누락됨`);
+            // balance 필드가 없으면 amount 값으로 설정
+            console.log(`[DataService] balance 필드 자동 추가 (amount 값으로 설정): ${coupon.amount}`);
+            data[index].balance = coupon.amount;
+          }
+        });
+      }
+      
       await SheetsService.updateSheetData(token, sheetInfo.id, type, data);
       console.log(`[DataService] 구글 시트에 ${type} 데이터 동기화 완료`);
       return true;
@@ -123,7 +144,8 @@ export const DataService = {
     const result = {
       menu: false,
       inventory: false,
-      orders: false
+      orders: false,
+      coupons: false
     };
     
     try {
@@ -138,6 +160,10 @@ export const DataService = {
       // 주문 데이터 동기화
       const ordersData = await this.loadData('orders');
       result.orders = await this.syncToGoogleSheet('orders', ordersData, token);
+      
+      // 쿠폰 데이터 동기화
+      const couponsData = await this.loadData('coupons');
+      result.coupons = await this.syncToGoogleSheet('coupons', couponsData, token);
       
       console.log('[DataService] 모든 데이터 동기화 결과:', result);
       return result;
@@ -202,7 +228,7 @@ export function useGoogleSheetAutoSync(
       // ref 값도 업데이트
       isSyncingRef.current = false;
       
-      console.log(`[AutoSync] 동기화 완료 (${successCount}/3 성공) - ${timestamp.toLocaleTimeString()}`);
+      console.log(`[AutoSync] 동기화 완료 (${successCount}/4 성공) - ${timestamp.toLocaleTimeString()}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
       console.error('[AutoSync] 동기화 오류:', errorMessage);
