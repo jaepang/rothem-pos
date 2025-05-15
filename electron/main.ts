@@ -7,7 +7,54 @@ import { ThermalPrinter, PrinterTypes } from 'node-thermal-printer'
 import { URL } from 'node:url'
 import { release } from 'node:os'
 import { net } from 'electron'
-const usb = require('usb')
+
+// 환경 감지 및 로깅 설정
+const isWindows = process.platform === 'win32';
+console.log(`[Electron] 운영체제: ${process.platform}, 아키텍처: ${process.arch}, Node 버전: ${process.versions.node}`);
+console.log(`[Electron] Windows 환경: ${isWindows}, Electron 버전: ${process.versions.electron}`);
+
+// Windows 환경에서 하드웨어 가속 비활성화 (app.ready 이전에 호출해야 함)
+if (isWindows) {
+  console.log('[Electron] Windows 환경에서 하드웨어 가속 비활성화');
+  app.disableHardwareAcceleration();
+  app.commandLine.appendSwitch('disable-gpu');
+  app.commandLine.appendSwitch('disable-software-rasterizer');
+}
+
+// 환경 변수 설정
+if (isWindows) {
+  console.log('[Electron] Windows 환경에 맞게 환경 변수 설정');
+  // Windows 환경에서 네이티브 모듈 문제 해결을 위한 환경 변수 설정
+  process.env.ELECTRON_ENABLE_LOGGING = '1';
+  process.env.ELECTRON_ENABLE_STACK_DUMPING = '1';
+  process.env.NODE_ENV = app.isPackaged ? 'production' : 'development';
+  
+  // Windows에서 대소문자 구분을 강제하도록 설정
+  process.env.CASE_SENSITIVE_PATHS = 'true';
+}
+
+// USB 모듈 안전하게 로드 (네이티브 모듈 문제 방지)
+let usb: any = null
+try {
+  console.log('[Electron] USB 모듈 로드 시도...');
+  usb = require('usb')
+  console.log('[Electron] USB 모듈 로드 성공')
+} catch (error) {
+  console.error('[Electron] USB 모듈 로드 실패:', error)
+  // 모듈 로드 실패 시 더미 객체로 대체
+  usb = {
+    getDeviceList: () => {
+      console.log('[Electron] USB 더미 getDeviceList 호출됨');
+      return [];
+    },
+    on: () => {
+      console.log('[Electron] USB 더미 on 이벤트 등록');
+    },
+    removeListener: () => {
+      console.log('[Electron] USB 더미 removeListener 호출됨');
+    }
+  }
+}
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -380,30 +427,35 @@ ipcMain.handle('printer:printOrder', async (_, order: any) => {
   }
 })
 
-// 파일 시스템 핸들러
-ipcMain.handle('fs:ensureDir', async (_, dirPath: string) => {
-  const fullPath = path.join(DATA_DIR, dirPath)
+// 파일 시스템 핸들러 추가
+ipcMain.handle('fs:readFile', async (_, filePath) => {
   try {
-    await fs.access(fullPath)
-  } catch {
-    await fs.mkdir(fullPath, { recursive: true })
+    const data = await fs.readFile(filePath, 'utf-8')
+    return data
+  } catch (error) {
+    console.error('파일 읽기 오류:', error)
+    throw error
   }
 })
 
-ipcMain.handle('fs:readFile', async (_, filePath: string) => {
-  const fullPath = path.join(DATA_DIR, filePath)
+ipcMain.handle('fs:writeFile', async (_, { filePath, content }) => {
   try {
-    return await fs.readFile(fullPath, 'utf-8')
-  } catch {
-    return ''
+    await fs.writeFile(filePath, content, 'utf-8')
+    return true
+  } catch (error) {
+    console.error('파일 쓰기 오류:', error)
+    throw error
   }
 })
 
-ipcMain.handle('fs:writeFile', async (_, { filePath, content }: { filePath: string; content: string }) => {
-  const fullPath = path.join(DATA_DIR, filePath)
-  const dir = path.dirname(fullPath)
-  await fs.mkdir(dir, { recursive: true })
-  await fs.writeFile(fullPath, content, 'utf-8')
+ipcMain.handle('fs:ensureDir', async (_, dirPath) => {
+  try {
+    await fs.mkdir(dirPath, { recursive: true })
+    return true
+  } catch (error) {
+    console.error('디렉토리 생성 오류:', error)
+    throw error
+  }
 })
 
 // 프린터 관련 코드
@@ -451,8 +503,9 @@ function handleGoogleAuth(mainWindow: BrowserWindow, authURL: string): Promise<a
       // 인증 URL 로드
       authWindow.loadURL(authURL);
       
-      // 개발자 도구 열기 (개발 중에만 사용)
-      if (process.env.NODE_ENV === 'development') {
+      // 개발자 도구는 항상 열어서 디버깅 가능하게 함
+      // Windows 환경에서는 자동으로 열지 않음
+      if (isWindows) {
         authWindow.webContents.openDevTools();
       }
 
@@ -550,13 +603,15 @@ ipcMain.handle('auth:google-oauth', async (event, authURL) => {
 
 // 앱 정보와 유틸리티 핸들러
 ipcMain.handle('app:relaunch', () => {
-  app.relaunch();
-  app.exit(0);
-});
+  console.log('앱 재시작 요청 수신')
+  app.relaunch()
+  app.exit(0)
+  return true
+})
 
 ipcMain.handle('app:getVersion', () => {
-  return app.getVersion();
-});
+  return app.getVersion()
+})
 
 // The built directory structure
 //
@@ -580,26 +635,125 @@ let isAppReady = false
 let loadErrorOccurred = false
 
 async function createWindow() {
+  // 로그 파일 설정
+  const logFilePath = path.join(app.getPath('logs'), 'app.log')
+  console.log(`로그 파일 경로: ${logFilePath}`)
+  
+  try {
+    // 로그 디렉토리 확인 및 생성
+    const logDir = path.dirname(logFilePath)
+    if (!fs_sync.existsSync(logDir)) {
+      fs_sync.mkdirSync(logDir, { recursive: true })
+      console.log(`로그 디렉토리 생성: ${logDir}`)
+    }
+    
+    // 이전 로그 파일 백업
+    if (fs_sync.existsSync(logFilePath)) {
+      const backupPath = `${logFilePath}.backup`
+      fs_sync.renameSync(logFilePath, backupPath)
+      console.log(`이전 로그 백업: ${backupPath}`)
+    }
+    
+    // 새 로그 파일 생성 및 시스템 정보 기록
+    fs_sync.writeFileSync(logFilePath, 
+      `=== 애플리케이션 시작: ${new Date().toISOString()} ===\n` +
+      `OS: ${process.platform} ${release()}\n` +
+      `Electron: ${process.versions.electron}\n` +
+      `Node: ${process.versions.node}\n` +
+      `앱 경로: ${app.getAppPath()}\n` +
+      `작업 디렉토리: ${process.cwd()}\n` +
+      `사용자 데이터 경로: ${app.getPath('userData')}\n\n`
+    )
+    
+    // 로그 파일에 콘솔 출력 추가
+    const originalConsoleLog = console.log
+    const originalConsoleError = console.error
+    const originalConsoleWarn = console.warn
+    
+    console.log = function(...args: any[]) {
+      const logMessage = `[LOG] ${args.join(' ')}\n`
+      fs_sync.appendFileSync(logFilePath, `${new Date().toISOString()} ${logMessage}`)
+      originalConsoleLog.apply(console, args)
+    }
+    
+    console.error = function(...args: any[]) {
+      const logMessage = `[ERROR] ${args.join(' ')}\n`
+      fs_sync.appendFileSync(logFilePath, `${new Date().toISOString()} ${logMessage}`)
+      originalConsoleError.apply(console, args)
+    }
+    
+    console.warn = function(...args: any[]) {
+      const logMessage = `[WARN] ${args.join(' ')}\n`
+      fs_sync.appendFileSync(logFilePath, `${new Date().toISOString()} ${logMessage}`)
+      originalConsoleWarn.apply(console, args)
+    }
+  } catch (error) {
+    console.error('로그 설정 실패:', error)
+  }
+
   win = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+    icon: path.join(process.env.VITE_PUBLIC || '', 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      webSecurity: false, // 개발 중에는 CORS 문제 방지를 위해 보안 제한 완화
+      // Windows 환경에서 필요한 추가 설정
+      additionalArguments: isWindows ? ['--no-sandbox', '--disable-gpu-process-crash-limit'] : [],
+      sandbox: isWindows, // Windows에서 샌드박스 모드 활성화
+      // 렌더러 메모리 관리 설정
+      backgroundThrottling: false,
+      enableWebSQL: false,
+      enablePreferredSizeMode: true,
+      spellcheck: false,
     },
     width: 1200,
     height: 800,
-    // 로딩 중에는 화면을 표시하지 않음
-    show: false
+    // Windows 환경에서는 즉시 표시
+    show: isWindows ? true : false,
+    // Windows에서는 프레임 없는 창으로 표시하지 않음
+    frame: true,
+    // 리소스 사용 최적화
+    backgroundColor: '#ffffff',
+    // 창 닫기 동작 최적화
+    closable: true
   })
 
   // 개발자 도구는 항상 열어서 디버깅 가능하게 함
-  win.webContents.openDevTools();
+  
+  // preload.js 로딩 검증
+  console.log('Preload 스크립트 경로:', path.join(__dirname, 'preload.js'))
+  try {
+    fs_sync.accessSync(path.join(__dirname, 'preload.js'))
+    console.log('Preload 스크립트 파일 확인됨')
+  } catch (err) {
+    console.error('Preload 스크립트 파일이 존재하지 않음:', err)
+    // preload.js가 없다면 기본 preload 스크립트 생성
+    try {
+      const basicPreload = `
+        const { contextBridge, ipcRenderer } = require('electron');
+        
+        // 기본 API 노출
+        contextBridge.exposeInMainWorld('electron', {
+          isElectron: true,
+          relaunch: () => ipcRenderer.invoke('app:relaunch')
+        });
+        
+        console.log('기본 Preload 스크립트가 실행됨');
+      `;
+      fs_sync.writeFileSync(path.join(__dirname, 'preload.js'), basicPreload);
+      console.log('기본 Preload 스크립트 파일 생성됨');
+    } catch (writeErr) {
+      console.error('기본 Preload 스크립트 생성 실패:', writeErr);
+    }
+  }
   
   // 윈도우가 준비되면 표시
   win.once('ready-to-show', () => {
-    if (!loadErrorOccurred) {
-      win?.show()
+    // 로딩 에러가 있더라도 윈도우는 표시하도록 변경
+    win?.show()
+    if (loadErrorOccurred) {
+      console.log('로딩 에러가 발생했지만 윈도우를 표시합니다.')
     }
   })
 
@@ -607,6 +761,26 @@ async function createWindow() {
   win.webContents.on('did-finish-load', () => {
     win?.webContents.send('main-process-message', (new Date).toLocaleString())
     console.log('페이지 로드 완료!')
+    
+    // Windows 환경에서 추가 처리
+    if (isWindows) {
+      // root 엘리먼트 상태 확인 스크립트 실행
+      win?.webContents.executeJavaScript(`
+        const rootEl = document.getElementById('root');
+        console.log('[Renderer] 페이지 로드 완료 후 루트 상태:', 
+          rootEl ? '존재함 (자식: ' + rootEl.childNodes.length + ')' : '존재하지 않음');
+        
+        // React 앱이 제대로 마운트 됐는지 확인 - 새로고침 없이 진단만 수행
+        setTimeout(() => {
+          const rootEl = document.getElementById('root');
+          if (rootEl && rootEl.childNodes.length === 0) {
+            console.error('[Renderer] React 앱이 마운트되지 않음. 개발자 도구에서 확인 필요');
+          }
+        }, 5000);
+      `).catch(err => {
+        console.error('상태 확인 스크립트 실행 실패:', err);
+      });
+    }
   })
 
   // 페이지 로드 오류 처리
@@ -743,29 +917,29 @@ async function createWindow() {
   console.log('USER DATA 경로:', app.getPath('userData'))
   console.log('DATA_DIR 경로:', DATA_DIR)
   console.log('DEV SERVER URL:', VITE_DEV_SERVER_URL || '없음')
+  console.log('앱 경로:', app.getAppPath())
+  console.log('현재 작업 디렉토리:', process.cwd())
+  console.log('__dirname:', __dirname)
 
   if (VITE_DEV_SERVER_URL) {
-    console.log('개발 서버 URL로 로드 시도:', VITE_DEV_SERVER_URL)
+    console.log(`[Electron] 개발 서버 URL로 로드: ${VITE_DEV_SERVER_URL}`);
     win.loadURL(VITE_DEV_SERVER_URL)
-    .catch(err => {
-      console.error('개발 서버 로드 실패:', err)
-    })
   } else {
-    const indexHtmlPath = path.join(process.env.DIST, 'index.html')
-    console.log('프로덕션 빌드 파일 로드 시도:', indexHtmlPath)
+    // 프로덕션 빌드
+    // win.loadFile(path.join(process.env.DIST, 'index.html'))
+    // Windows 환경에서는 file URL 사용 (file:// 프로토콜)
+    const indexPath = path.join(process.env.DIST, 'index.html');
+    console.log(`[Electron] 프로덕션 빌드 파일 로드: ${indexPath}`);
     
-    // index.html 파일이 존재하는지 확인
-    try {
-      fs_sync.accessSync(indexHtmlPath)
-      console.log('index.html 파일 존재 확인됨')
-    } catch (err) {
-      console.error('index.html 파일이 존재하지 않음:', err)
+    if (isWindows) {
+      // Windows에서는 URL 형식으로 로드 (일부 Windows 환경에서 더 안정적)
+      const fileUrl = new URL(`file:///${indexPath.replace(/\\/g, '/')}`).href;
+      console.log(`[Electron] Windows 환경에서 변환된 URL: ${fileUrl}`);
+      win.loadURL(fileUrl);
+    } else {
+      // 다른 플랫폼에서는 파일 경로 직접 사용
+      win.loadFile(indexPath);
     }
-    
-    win.loadFile(indexHtmlPath)
-    .catch(err => {
-      console.error('프로덕션 빌드 로드 실패:', err)
-    })
   }
 }
 

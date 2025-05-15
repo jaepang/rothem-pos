@@ -1,9 +1,9 @@
-import React, { RefObject } from 'react'
+import React from 'react'
 
 interface MenuActionsProps {
   onAddMenu: () => void
   onExportMenus: () => void
-  excelInputRef: RefObject<HTMLInputElement | null>
+  excelInputRef: React.RefObject<HTMLInputElement> | React.MutableRefObject<HTMLInputElement | null>
   onImportMenus: (event: React.ChangeEvent<HTMLInputElement>) => void
 }
 

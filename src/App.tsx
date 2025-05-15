@@ -9,7 +9,11 @@ import { SettingsPage } from './renderer/components/settings/SettingsPage'
 import { DataService, useGoogleSheetAutoSync, SyncStatus } from './firebase/dataService'
 import { getCurrentUser, GoogleToken, checkRedirectResult } from './firebase/auth'
 import { useAuth } from './firebase/AuthContext'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+
+// Windows 환경 감지
+const isWindows = window.electron?.platform === 'win32';
+console.log('Windows 환경 감지됨:', isWindows);
 
 // 인증 콜백 처리 컴포넌트
 const AuthCallback = () => {
@@ -80,52 +84,8 @@ const AppContent = () => {
   const tooltipTimerRef = useRef<number | null>(null)
   const logWindowRef = useRef<HTMLDivElement>(null)
   const { refreshToken } = useAuth();
+  console.log('AppContent 렌더링 시작');
   
-  // 콘솔 로그 가로채기
-  useEffect(() => {
-    if (window.electron) {
-      // 디버그 모드에서만 콘솔 로그 가로채기
-      const originalConsoleLog = console.log;
-      const originalConsoleError = console.error;
-      const originalConsoleWarn = console.warn;
-      
-      // 콘솔 로그 함수 대체
-      console.log = function(...args: any[]) {
-        setLogs(prev => [...prev, `[LOG] ${args.join(' ')}`]);
-        originalConsoleLog.apply(console, args);
-      };
-      
-      console.error = function(...args: any[]) {
-        setLogs(prev => [...prev, `[ERROR] ${args.join(' ')}`]);
-        originalConsoleError.apply(console, args);
-      };
-      
-      console.warn = function(...args: any[]) {
-        setLogs(prev => [...prev, `[WARN] ${args.join(' ')}`]);
-        originalConsoleWarn.apply(console, args);
-      };
-      
-      // 로그 최대 개수 제한 (성능 이슈 방지)
-      const MAX_LOGS = 1000;
-      if (logs.length > MAX_LOGS) {
-        setLogs(logs.slice(logs.length - MAX_LOGS));
-      }
-      
-      // 컴포넌트 언마운트 시 원래 콘솔 함수 복원
-      return () => {
-        console.log = originalConsoleLog;
-        console.error = originalConsoleError;
-        console.warn = originalConsoleWarn;
-      };
-    }
-  }, [logs.length]);
-  
-  // 로그 창이 업데이트될 때마다 스크롤을 맨 아래로 이동
-  useEffect(() => {
-    if (logWindowRef.current && activeTab === 'debug') {
-      logWindowRef.current.scrollTop = logWindowRef.current.scrollHeight;
-    }
-  }, [logs, activeTab]);
   
   // Firebase 인증 리디렉션 결과 확인
   useEffect(() => {
@@ -325,13 +285,24 @@ const AppContent = () => {
 
 // 메인 앱 컴포넌트 - 라우팅 설정
 export default function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/auth-callback" element={<AuthCallback />} />
-        <Route path="/" element={<AppContent />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
-  );
+  console.log('App 컴포넌트 렌더링 시작');
+  const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  try {
+    return (
+      <HashRouter>
+        <Routes>
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/" element={<AppContent />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </HashRouter>
+    );
+  } catch (error) {
+    console.error('App 렌더링 중 오류 발생:', error);
+    setError(true);
+    setErrorMessage(String(error));
+    return null;
+  }
 }

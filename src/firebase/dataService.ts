@@ -1,6 +1,9 @@
 import { SheetsService } from './sheets';
 import { GoogleToken } from './auth';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getCurrentUser } from './auth';
+// app를 사용하지 않도록 수정
+// import { app } from './config';
 
 // 앱 데이터 타입
 export type DataType = 'menu' | 'inventory' | 'orders' | 'coupons';
@@ -206,12 +209,36 @@ export const DataService = {
     }
   },
   
-  // 앱 초기화 시 로그인 및 연동 상태 검사
-  checkLoginAndSyncStatus(): { isLoggedIn: boolean, isSheetLinked: boolean } {
-    const isLoggedIn = !!localStorage.getItem('googleAuthToken');
-    const isSheetLinked = this.isGoogleSheetLinked();
-    
-    return { isLoggedIn, isSheetLinked };
+  // 로그인 및 동기화 상태 확인 메서드 개선
+  checkLoginAndSyncStatus(): { isLoggedIn: boolean; isSheetLinked: boolean } {
+    try {
+      // Firebase 초기화 실패 시 오프라인 모드로 전환
+      if (!checkFirebaseInitialization()) {
+        console.warn('[DataService] Firebase 초기화 실패, 오프라인 모드로 전환');
+        setupOfflineMode(true);
+        return { isLoggedIn: true, isSheetLinked: true };  // 오프라인 모드에서는 항상 true 반환
+      }
+      
+      if (isOfflineMode()) {
+        console.log('[DataService] 오프라인 모드 - 로그인/연동 상태 무시');
+        return { isLoggedIn: true, isSheetLinked: true };
+      }
+      
+      const user = getCurrentUser();
+      const storedToken = localStorage.getItem('googleAuthToken');
+      const spreadsheetId = localStorage.getItem('googleSpreadsheetId');
+      
+      console.log('[DataService] 로그인 상태:', !!user);
+      console.log('[DataService] 스프레드시트 연동 상태:', !!spreadsheetId);
+      
+      return {
+        isLoggedIn: !!user && !!storedToken,
+        isSheetLinked: !!spreadsheetId
+      };
+    } catch (error) {
+      console.error('[DataService] 상태 확인 중 오류:', error);
+      return { isLoggedIn: false, isSheetLinked: false };
+    }
   }
 };
 
@@ -315,4 +342,36 @@ export function useGoogleSheetAutoSync(
   }, [token, enabled, interval, syncData]);
   
   return status;
-} 
+}
+
+// Firebase 초기화 상태를 확인하고 실패시 안전하게 대체 기능을 제공하는 추가 코드
+export const checkFirebaseInitialization = (): boolean => {
+  try {
+    // Firebase 초기화 여부 직접 체크
+    const isFirebaseInitialized = typeof window !== 'undefined' && 
+                                 window.localStorage && 
+                                 localStorage.getItem('firebase-initialized') === 'true';
+    
+    if (!isFirebaseInitialized) {
+      console.warn('[DataService] Firebase가 초기화되지 않았거나 사용할 수 없습니다.');
+    }
+    
+    return isFirebaseInitialized;
+  } catch (error) {
+    console.error('[DataService] Firebase 초기화 확인 중 오류:', error);
+    return false;
+  }
+};
+
+// 앱이 Firebase와 독립적으로 실행될 수 있도록 하는 함수
+export const setupOfflineMode = (enable: boolean = false): void => {
+  console.log(`[Firebase] 오프라인 모드 ${enable ? '활성화' : '비활성화'}`);
+  
+  // localStorage에 오프라인 모드 상태 저장
+  localStorage.setItem('firebaseOfflineMode', enable ? 'true' : 'false');
+};
+
+// 오프라인 모드 상태 확인
+export const isOfflineMode = (): boolean => {
+  return localStorage.getItem('firebaseOfflineMode') === 'true';
+}; 

@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build && electron-builder",
+    "build:window": "tsc && cross-env NODE_ENV=production vite build --mode production && electron-builder --x64 --win",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "jest"
@@ -17,13 +18,26 @@
       "output": "release"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "artifactName": "TEST-Setup-TEST.${ext}",
+      "icon": "public/rothem-icon.ico"
     },
     "mac": {
       "target": "dmg"
     },
+    "files": [
+      "dist/",
+      "dist-electron/",
+      "package.json"
+    ],
     "extraResources": [
       "public"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/usb/**/*",
+      "node_modules/node-thermal-printer/**/*",
+      "node_modules/@firebase/**/*"
     ]
   },
   "dependencies": {
@@ -39,9 +53,9 @@
     "firebase": "^11.6.0",
     "lucide-react": "^0.483.0",
     "node-thermal-printer": "^4.4.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-router-dom": "^7.5.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0",
     "tailwind-merge": "^3.0.2",
     "usb": "^2.15.0",
     "vite-plugin-electron": "^0.29.0",
@@ -50,12 +64,13 @@
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@types/d3": "^7.4.3",
-    "@types/react": "^19.0.12",
-    "@types/react-dom": "^19.0.4",
+    "@types/react": "^18.2.58",
+    "@types/react-dom": "^18.2.19",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "@typescript-eslint/parser": "^8.28.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "10.4.17",
+    "cross-env": "^7.0.3",
     "electron": "^35.0.3",
     "electron-builder": "^25.1.8",
     "eslint": "^9.23.0",
@@ -75,7 +90,19 @@
       "esbuild",
       "usb",
       "@firebase/util",
-      "protobufjs"
-    ]
+      "protobufjs",
+      "node-thermal-printer"
+    ],
+    "overrides": {
+      "usb": "^2.15.0"
+    }
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "perMachine": false,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Rothem POS"
   }
 }
