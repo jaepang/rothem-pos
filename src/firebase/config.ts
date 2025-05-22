@@ -1,143 +1,121 @@
-import { initializeApp } from 'firebase/app'
-import { getAuth, Auth } from 'firebase/auth'
-
-// 환경 감지
-const isElectron = typeof window !== 'undefined' && window.electron !== undefined;
-console.log('[Firebase Config] Electron 환경 감지:', isElectron);
-
-// Windows OS 감지
-const isWindows = typeof navigator !== 'undefined' && navigator.platform && 
-                 (navigator.platform.includes('Win') || navigator.userAgent.includes('Windows'));
-console.log('[Firebase Config] Windows OS 감지:', isWindows);
+import { initializeApp, getApp, getApps } from 'firebase/app'
+import { 
+  getAuth, 
+  connectAuthEmulator, 
+  browserLocalPersistence,
+  browserSessionPersistence, 
+  indexedDBLocalPersistence, 
+  setPersistence, 
+  inMemoryPersistence 
+} from 'firebase/auth'
 
 // Firebase 설정
-export const firebaseConfig = {
-  apiKey: "AIzaSyRoMOGShBc2nADK3CT0W0Y1OEuvJ2NrLA",
+// 이 정보는 민감하지 않고 클라이언트에 노출되어도 안전합니다
+const firebaseConfig = {
+  apiKey: "AIzaSyB3wQQGsRz2nkN6K3TQVoVI0GEwvJZNrLA",
   authDomain: "rothem-acd02.firebaseapp.com",
   projectId: "rothem-acd02",
-  storageBucket: "rothem-acd02.appspot.com",
-  messagingSenderId: "114131153898",
-  appId: "1:114131153898:web:24ed26ea75c46c4c6b7c3"
-};
+  storageBucket: "rothem-acd02.firebasestorage.app",
+  messagingSenderId: "141311538298",
+  appId: "1:141311538298:web:24ed26bea75c46c4b6b7c3",
+  measurementId: "G-9E9QEMZLBV",
+}
 
-// OAuth 설정
+// OAuth 설정 - Google Cloud Console에서 생성한 OAuth 클라이언트 ID
 export const oauthConfig = {
-  clientId: "114131153898-web24ed26ea75c46c4c6b7c3.apps.googleusercontent.com",
-  redirectUri: "urn:ietf:wg:oauth:2.0:oob",
-  directRedirectUri: "http://localhost:5173/auth/callback"
-};
-
-// 오프라인 모드 확인
-const isOfflineMode = () => {
-  if (typeof window === 'undefined' || !window.localStorage) return false;
-  return localStorage.getItem('firebaseOfflineMode') === 'true';
-};
-
-// 초기화 전 오프라인 모드 확인
-console.log('[Firebase Config] 오프라인 모드 상태:', isOfflineMode());
-
-// 안정성 설정: Windows에서 자동으로 오프라인 모드 권장
-if (isWindows) {
-  console.warn('[Firebase Config] Windows 환경 감지됨. 안정적인 사용을 위해 오프라인 모드를 권장합니다.');
-  console.warn('[Firebase Config] 오프라인 모드 활성화는 localStorage.setItem("firebaseOfflineMode", "true")를 실행하세요.');
+  clientId: "833816109914-1f30uc04fco9cvp9daqh6rba82b8fjk4.apps.googleusercontent.com",
+  redirectUri: "https://rothem-acd02.firebaseapp.com/__/auth/handler",
+  // 브라우저 환경에서 직접 호출 가능한 URI 추가
+  directRedirectUri: "https://rothem-acd02.web.app/auth-callback",
 }
 
-// 초기화 로직
-let app;
-let auth: Auth | null = null;
+// Firebase 앱 초기화 전 설정 확인
+console.log('Firebase 초기화 설정 확인:');
+console.log('apiKey:', firebaseConfig.apiKey);
+console.log('projectId:', firebaseConfig.projectId);
+console.log('appId:', firebaseConfig.appId);
 
-// Firebase 초기화 시도 (오프라인 모드가 아닐 때만)
-if (!isOfflineMode()) {
+// 브라우저 스토리지 초기화 (선택적)
+if (typeof window !== 'undefined') {
   try {
-    console.log('[Firebase Config] 초기화 시도...');
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    console.log('[Firebase Config] 초기화 성공');
-    
-    // 초기화 상태를 localStorage에 저장
-    if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem('firebase-initialized', 'true');
-    }
-  } catch (error) {
-    console.error('[Firebase Config] 초기화 실패:', error);
-    app = null;
-    auth = null;
-    
-    // 초기화 실패 상태를 localStorage에 저장
-    if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem('firebase-initialized', 'false');
-      
-      // Windows에서 초기화 실패 시 자동으로 오프라인 모드 활성화
-      if (isWindows) {
-        console.warn('[Firebase Config] Windows에서 초기화 실패. 자동으로 오프라인 모드로 전환합니다.');
-        localStorage.setItem('firebaseOfflineMode', 'true');
+    // Firebase 관련 세션 스토리지 초기화
+    const keys = Object.keys(sessionStorage);
+    for (const key of keys) {
+      if (key.includes('firebase') || key.includes('firebaseLocalStorage')) {
+        console.log('세션 스토리지 항목 삭제:', key);
+        sessionStorage.removeItem(key);
       }
     }
-  }
-} else {
-  console.log('[Firebase Config] 오프라인 모드에서는 Firebase 초기화를 건너뜁니다.');
-  app = null;
-  auth = null;
-  // 오프라인 모드에서는 초기화 성공으로 표시 (앱 작동에 필요)
-  if (typeof window !== 'undefined' && window.localStorage) {
-    localStorage.setItem('firebase-initialized', 'true');
+  } catch (e) {
+    console.error('세션 스토리지 초기화 실패:', e);
   }
 }
 
-// 오류 상태인 경우 대비 (윈도우 환경에서 발생할 수 있는 DOM 관련 오류 방지)
-const safeAuth = () => {
-  // 오프라인 모드 확인 (함수 호출 시점에 상태 확인)
-  const offlineMode = isOfflineMode();
-  
-  // 오프라인 모드면 모의 객체 반환
-  if (offlineMode) {
-    console.log('[Firebase Config] 오프라인 모드에서 모의 Auth 객체 반환');
-    return {
-      currentUser: { uid: 'offline-user-id', displayName: 'Offline User' },
-      signInWithPopup: async () => ({
-        user: { uid: 'offline-user-id', displayName: 'Offline User' },
-        credential: { accessToken: 'offline-mode-token' }
-      }),
-      signOut: async () => {}
-    } as unknown as Auth;
-  }
-  
-  if (!auth) {
-    console.warn('[Firebase Config] auth 객체가 없음, 새로 생성 시도');
-    try {
-      // 재시도
-      app = initializeApp(firebaseConfig);
-      auth = getAuth(app);
-      console.log('[Firebase Config] auth 객체 재생성 성공');
-      
-      // 성공 상태 저장
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('firebase-initialized', 'true');
-      }
-    } catch (e) {
-      console.error('[Firebase Config] auth 객체 재생성 실패:', e);
-      
-      // 실패 상태 저장
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('firebase-initialized', 'false');
-        
-        // Windows에서 초기화 실패 시 자동으로 오프라인 모드 활성화
-        if (isWindows) {
-          console.warn('[Firebase Config] Windows에서 재시도 실패. 자동으로 오프라인 모드로 전환합니다.');
-          localStorage.setItem('firebaseOfflineMode', 'true');
-        }
-      }
-      
-      // 에러가 계속되면 모의 객체 반환
-      return {
-        currentUser: null,
-        signInWithPopup: async () => {
-          throw new Error('인증 시스템이 초기화되지 않았습니다.');
-        }
-      } as unknown as Auth;
-    }
-  }
-  return auth;
-};
+// Firebase 초기화 (이미 초기화된 앱이 있다면 재사용)
+let firebaseApp;
+if (getApps().length === 0) {
+  console.log('Firebase 앱 초기화 중...');
+  firebaseApp = initializeApp(firebaseConfig);
+} else {
+  console.log('기존 Firebase 앱 사용');
+  firebaseApp = getApp();
+}
 
-export { app, auth, safeAuth }; 
+// Firebase 인증 인스턴스 가져오기
+export const auth = getAuth(firebaseApp);
+
+// 개발 환경에서만 콘솔에 현재 인증 상태 로깅
+if (import.meta.env.DEV) {
+  auth.onAuthStateChanged((user) => {
+    console.log('Auth state changed:', user ? `User: ${user.email}` : 'No user');
+  });
+}
+
+// 브라우저 환경이 아닌 경우(Electron) 처리
+if (typeof window !== 'undefined') {
+  // 지속성 문제 처리를 위한 함수
+  const setupPersistence = async () => {
+    try {
+      // 먼저 indexedDB 지속성 시도
+      await setPersistence(auth, indexedDBLocalPersistence);
+      console.log('IndexedDB 지속성으로 설정됨');
+    } catch (indexedDBError) {
+      console.warn('IndexedDB 지속성 설정 실패:', indexedDBError);
+      
+      try {
+        // 대체 방법으로 browserLocal 시도
+        await setPersistence(auth, browserLocalPersistence);
+        console.log('브라우저 로컬 지속성으로 설정됨');
+      } catch (localError) {
+        console.warn('브라우저 로컬 지속성 설정 실패:', localError);
+        
+        try {
+          // 마지막으로 세션 지속성 시도
+          await setPersistence(auth, browserSessionPersistence);
+          console.log('브라우저 세션 지속성으로 설정됨');
+        } catch (sessionError) {
+          console.error('모든 지속성 설정 실패:', sessionError);
+          
+          // 최후의 방법으로 인메모리 사용
+          try {
+            await setPersistence(auth, inMemoryPersistence);
+            console.log('인메모리 지속성으로 설정됨');
+          } catch (memoryError) {
+            console.error('인메모리 지속성 설정도 실패:', memoryError);
+          }
+        }
+      }
+    }
+  };
+  
+  // 지속성 설정 실행
+  setupPersistence();
+
+  // Electron 환경 감지 및 처리
+  if (window.electron) {
+    console.log('Electron 환경 감지됨, 특별 처리 적용');
+  }
+}
+
+// Firebase 앱 내보내기
+export const app = firebaseApp; 
