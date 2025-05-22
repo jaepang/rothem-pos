@@ -23,7 +23,8 @@
       "icon": "public/rothem-icon.ico"
     },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "public/rothem-icon.png"
     },
     "files": [
       "dist/",

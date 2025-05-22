@@ -7,6 +7,7 @@ import { ThermalPrinter, PrinterTypes } from 'node-thermal-printer'
 import { URL } from 'node:url'
 import { release } from 'node:os'
 import { net } from 'electron'
+import { nativeImage } from 'electron'
 
 // 환경 감지 및 로깅 설정
 const isWindows = process.platform === 'win32';
@@ -691,8 +692,15 @@ async function createWindow() {
     console.error('로그 설정 실패:', error)
   }
 
+  // macOS와 다른 플랫폼에 따라 아이콘 경로 설정
+  const iconPath = process.platform === 'darwin'
+    ? path.join(process.env.VITE_PUBLIC || path.join(process.cwd(), 'public'), 'rothem-icon.png')
+    : path.join(process.env.VITE_PUBLIC || path.join(process.cwd(), 'public'), 'rothem-icon.ico');
+    
+  console.log(`[Electron] ${process.platform} 플랫폼용 앱 아이콘 경로:`, iconPath);
+  
   win = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC || '', 'electron-vite.svg'),
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -947,6 +955,29 @@ async function createWindow() {
 app.whenReady().then(() => {
   isAppReady = true;
   console.log('앱 준비 완료');
+
+  // macOS에서 개발 모드 아이콘 설정
+  if (process.platform === 'darwin') {
+    try {
+      // macOS에서는 PNG 파일을 우선적으로 사용 
+      const iconPath = path.join(process.env.VITE_PUBLIC || path.join(process.cwd(), 'public'), 'rothem-icon.png');
+      console.log('[Electron] macOS 독 아이콘 설정 경로:', iconPath);
+      
+      if (fs_sync.existsSync(iconPath)) {
+        const image = nativeImage.createFromPath(iconPath);
+        if (!image.isEmpty()) {
+          app.dock.setIcon(image);
+          console.log('[Electron] macOS 독 아이콘 설정 완료');
+        } else {
+          console.error('[Electron] 아이콘 이미지가 비어있습니다');
+        }
+      } else {
+        console.error('[Electron] 아이콘 파일이 존재하지 않습니다:', iconPath);
+      }
+    } catch (error) {
+      console.error('[Electron] macOS 독 아이콘 설정 오류:', error);
+    }
+  }
 
   // 먼저 필요한 데이터 디렉토리 생성
   try {
