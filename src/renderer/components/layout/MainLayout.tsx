@@ -1,19 +1,17 @@
 import React from 'react'
 
-type TabType = 'order' | 'menu' | 'category' | 'inventory' | 'history' | 'settings' | 'debug'
+type TabType = 'order' | 'menu' | 'category' | 'inventory' | 'history' | 'settings'
 
 interface MainLayoutProps {
   children: React.ReactNode;
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
-  showDebugTab?: boolean;
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ 
   children, 
   activeTab, 
-  onTabChange,
-  showDebugTab = false
+  onTabChange
 }) => {
   return (
     <div className="min-h-screen bg-background">
@@ -89,18 +87,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             >
               설정
             </button>
-            {showDebugTab && (
-              <button
-                onClick={() => onTabChange('debug')}
-                className={`px-4 py-2 rounded-md ${
-                  activeTab === 'debug'
-                    ? 'bg-red-500 text-white'
-                    : 'bg-gray-500 text-white hover:bg-gray-600'
-                }`}
-              >
-                디버그
-              </button>
-            )}
           </div>
         </div>
       </header>

@@ -71,7 +71,7 @@ const AuthCallback = () => {
   );
 };
 
-type TabType = 'order' | 'menu' | 'category' | 'inventory' | 'history' | 'settings' | 'debug'
+type TabType = 'order' | 'menu' | 'category' | 'inventory' | 'history' | 'settings'
 
 // AppContent - 메인 애플리케이션 컴포넌트
 const AppContent = () => {
@@ -80,12 +80,9 @@ const AppContent = () => {
   const [isLoginRequired, setIsLoginRequired] = useState(false)
   const [showSyncTooltip, setShowSyncTooltip] = useState(false)
   const [isRedirectChecking, setIsRedirectChecking] = useState(true)
-  const [logs, setLogs] = useState<string[]>([])
   const tooltipTimerRef = useRef<number | null>(null)
-  const logWindowRef = useRef<HTMLDivElement>(null)
   const { refreshToken } = useAuth();
   console.log('AppContent 렌더링 시작');
-  
   
   // Firebase 인증 리디렉션 결과 확인
   useEffect(() => {
@@ -213,59 +210,8 @@ const AppContent = () => {
     );
   };
   
-  // 디버그 로그 창 렌더링
-  const renderDebugLog = () => {
-    return (
-      <div className="p-4">
-        <h2 className="text-xl font-bold mb-4">디버그 로그</h2>
-        <button 
-          className="bg-blue-500 text-white px-4 py-2 rounded mb-2 hover:bg-blue-600"
-          onClick={() => setLogs([])}
-        >
-          로그 지우기
-        </button>
-        <button 
-          className="ml-2 bg-green-500 text-white px-4 py-2 rounded mb-2 hover:bg-green-600"
-          onClick={() => {
-            console.log('로그 테스트 메시지:', new Date().toISOString());
-          }}
-        >
-          테스트 로그 추가
-        </button>
-        <div 
-          ref={logWindowRef}
-          className="bg-gray-900 text-green-400 p-4 rounded h-[500px] overflow-y-auto font-mono text-sm"
-        >
-          {logs.length === 0 ? (
-            <div className="text-gray-500">로그가 없습니다...</div>
-          ) : (
-            logs.map((log, index) => (
-              <div key={index} className="whitespace-pre-wrap mb-1">
-                {log}
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    );
-  };
-  
-  // 키보드 단축키 처리 (디버그 모드 토글)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Alt+D로 디버그 모드 토글
-      if (e.altKey && e.key === 'd') {
-        e.preventDefault();
-        setActiveTab(prev => prev === 'debug' ? 'order' : 'debug');
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   return (
-    <MainLayout activeTab={activeTab} onTabChange={setActiveTab} showDebugTab={!!window.electron}>
+    <MainLayout activeTab={activeTab} onTabChange={setActiveTab}>
       {isLoginRequired && activeTab !== 'settings' && 
         <div className="p-4 mb-4 text-red-600 bg-red-100 rounded">
           구글 계정 로그인 및 스프레드시트 연동이 필요합니다. 설정 페이지로 이동하세요.
@@ -278,7 +224,6 @@ const AppContent = () => {
       {activeTab === 'inventory' && <InventoryManagement />}
       {activeTab === 'history' && <OrderHistory />}
       {activeTab === 'settings' && <SettingsPage onLoginComplete={() => setIsLoginRequired(false)} />}
-      {activeTab === 'debug' && renderDebugLog()}
     </MainLayout>
   );
 };
