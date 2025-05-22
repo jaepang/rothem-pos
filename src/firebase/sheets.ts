@@ -433,21 +433,15 @@ const columnMappings: SheetMappings = {
   menu: {
     id: '메뉴ID',
     name: '메뉴명',
-    displayName: '표시명',
     price: '가격',
     hotPrice: '핫가격',
     icePrice: '아이스가격',
     category: '카테고리',
-    imageUrl: '이미지URL',
-    description: '설명',
-    isAvailable: '판매가능여부',
     isSoldOut: '품절여부',
     isHot: '핫옵션',
     isIce: '아이스옵션',
-    options: '옵션',
     order: '정렬순서',
-    relatedInventoryIds: '관련재고ID목록',
-    priceInfo: '가격정보'
+    relatedInventoryIds: '관련재고ID목록'
   },
 
   // 재고 데이터 컬럼 매핑
