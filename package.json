@@ -19,7 +19,7 @@
     },
     "win": {
       "target": "nsis",
-      "artifactName": "TEST-Setup-TEST.${ext}",
+      "artifactName": "Rothem-POS-Setup.${ext}",
       "icon": "public/rothem-icon.ico"
     },
     "mac": {
