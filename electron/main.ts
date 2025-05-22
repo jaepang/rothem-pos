@@ -75,47 +75,6 @@ const IMAGES_BASE_DIR = app.isPackaged
   
 const IMAGE_DIR = path.join(IMAGES_BASE_DIR, 'menu')
 
-// File system handlers
-ipcMain.handle('fs:saveImage', async (_, buffer: ArrayBuffer, menuId: string) => {
-  try {
-    // 이미지 디렉토리가 없으면 생성
-    if (!fs_sync.existsSync(IMAGE_DIR)) {
-      await fs.mkdir(IMAGE_DIR, { recursive: true })
-    }
-
-    const fileName = `${menuId}.jpg`
-    const filePath = path.join(IMAGE_DIR, fileName)
-    
-    // 파일 저장
-    await fs.writeFile(filePath, Buffer.from(buffer))
-    
-    // 이미지 경로 반환
-    const imagePath = app.isPackaged
-      ? `app-image://menu/${fileName}` // 패키지된 앱에서의 프로토콜 경로
-      : `/images/menu/${fileName}` // 개발 환경에서의 상대 경로
-      
-    return imagePath
-  } catch (error) {
-    console.error('이미지 저장 실패:', error)
-    throw error
-  }
-})
-
-ipcMain.handle('fs:deleteImage', async (_, imageUrl: string) => {
-  try {
-    const fileName = imageUrl.split('/').pop()
-    if (!fileName) return
-
-    const filePath = path.join(IMAGE_DIR, fileName)
-    if (fs_sync.existsSync(filePath)) {
-      await fs.unlink(filePath)
-    }
-  } catch (error) {
-    console.error('이미지 삭제 실패:', error)
-    throw error
-  }
-})
-
 // 경로 설정
 const DATA_DIR = path.join(app.getPath('userData'), 'data')
 const MENU_FILE_PATH = path.join(DATA_DIR, 'menu.json')

@@ -17,7 +17,7 @@ export interface SheetProperties {
 // 데이터 정제 함수
 const sanitizeValue = (value: any): string => {
   if (value === null || value === undefined) return '';
-  
+
   // 배열이나 객체인 경우 JSON 문자열로 변환
   if (Array.isArray(value) || typeof value === 'object') {
     try {
@@ -26,17 +26,17 @@ const sanitizeValue = (value: any): string => {
       return String(value);
     }
   }
-  
+
   // boolean 값 변환
   if (typeof value === 'boolean') {
     return value ? 'true' : 'false';
   }
-  
+
   // 숫자 변환
   if (typeof value === 'number') {
     return String(value);
   }
-  
+
   // 기타 문자열은 줄바꿈 제거
   return String(value).replace(/\n/g, ' ');
 };
@@ -51,17 +51,17 @@ export const SheetsService = {
         headers: { Authorization: `Bearer ${token.accessToken}` }
       }
     );
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('시트 목록 가져오기 에러 응답:', errorText);
       throw new Error(`API 응답 오류: ${response.status}`);
     }
-    
+
     const data = await response.json();
     return data.sheets?.map((sheet: any) => sheet.properties) || [];
   },
-  
+
   // 2. 새 시트 생성하기
   async createSheet(token: GoogleToken, spreadsheetId: string, sheetTitle: string) {
     const response = await fetch(
@@ -81,16 +81,16 @@ export const SheetsService = {
         })
       }
     );
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('시트 생성 에러 응답:', errorText);
       throw new Error(`시트 생성 실패: ${response.status}`);
     }
-    
+
     return (await response.json()).replies[0].addSheet.properties;
   },
-  
+
   // 3. 시트에 데이터 쓰기
   async writeData(token: GoogleToken, spreadsheetId: string, range: string, values: any[][]) {
     try {
@@ -107,20 +107,20 @@ export const SheetsService = {
           body: JSON.stringify({ values })
         }
       );
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('데이터 쓰기 에러 응답:', errorText);
         throw new Error(`데이터 쓰기 실패: ${response.status} - ${errorText}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('시트 데이터 쓰기 오류:', error);
       throw error;
     }
   },
-  
+
   // 4. 시트 데이터 가져오기
   async readData(token: GoogleToken, spreadsheetId: string, range: string) {
     try {
@@ -132,20 +132,20 @@ export const SheetsService = {
           headers: { Authorization: `Bearer ${token.accessToken}` }
         }
       );
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('데이터 읽기 에러 응답:', errorText);
         throw new Error(`데이터 읽기 실패: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('시트 데이터 읽기 오류:', error);
       throw error;
     }
   },
-  
+
   // 5. 시트 데이터가 비어있는지 확인
   async isSheetEmpty(token: GoogleToken, spreadsheetId: string, sheetName: string) {
     try {
@@ -158,7 +158,7 @@ export const SheetsService = {
       return true;
     }
   },
-  
+
   // 6. 구글 시트에서 데이터 로드 (객체 배열로 변환)
   async loadSheetData(token: GoogleToken, spreadsheetId: string, sheetName: string) {
     try {
@@ -166,64 +166,84 @@ export const SheetsService = {
       // 전체 시트 데이터 가져오기
       const encodedSheetName = encodeURIComponent(sheetName);
       const result = await this.readData(token, spreadsheetId, `${encodedSheetName}!A1:Z1000`);
-      
+
       if (!result.values || result.values.length < 2) {
         // 헤더 행만 있거나 데이터가 없음
         console.log(`시트 ${sheetName}에 데이터가 없거나 헤더만 있음`);
         return [];
       }
-      
+
       // 헤더 행과 데이터 행 분리
       const [headers, ...rows] = result.values;
       console.log(`시트 ${sheetName} 헤더:`, headers);
       console.log(`시트 ${sheetName} 데이터 행 수:`, rows.length);
-      
+
       // 한국어 컬럼명 -> 영어 키로 매핑 생성
       const reverseMapping: Record<string, string> = {};
       const sheetType = sheetName as keyof typeof columnMappings;
-      
+
       if (columnMappings[sheetType]) {
         Object.entries(columnMappings[sheetType]).forEach(([key, koreanName]) => {
           reverseMapping[koreanName] = key;
         });
       }
-      
+
+      // 중요 필드 매핑 확인 (메뉴 시트인 경우)
+      if (sheetName === 'menu') {
+        console.log('[중요 필드 매핑 확인]');
+        console.log('핫가격 -> ', reverseMapping['핫가격']);
+        console.log('아이스가격 -> ', reverseMapping['아이스가격']);
+        console.log('핫옵션 -> ', reverseMapping['핫옵션']);
+        console.log('아이스옵션 -> ', reverseMapping['아이스옵션']);
+      }
+
       // 각 행을 객체로 변환
       const results = rows.map((row: any[], rowIndex: number) => {
         const obj: Record<string, any> = {};
-        
+
         headers.forEach((header: string, index: number) => {
           // 헤더가 한국어면 영어 키로 변환, 아니면 그대로 사용
           const key = reverseMapping[header] || header;
           const value = index < row.length ? row[index] : null;
-          
+
+          // 메뉴 시트인 경우 핫가격/아이스가격 디버깅
+          if (sheetName === 'menu' && (header === '핫가격' || header === '아이스가격' || header === '핫옵션' || header === '아이스옵션')) {
+            console.log(`[DataLoading] 시트 ${sheetName} - 행 ${rowIndex + 1}, ${header}(${key}): ${value}, 타입: ${typeof value}`);
+          }
+
           // 값이 없는 경우
           if (value === undefined || value === null || value === '') {
             obj[key] = null;
             return;
           }
-          
+
           // 불린 값 처리
           if (value === 'true' || value === 'TRUE') {
             obj[key] = true;
             return;
-          } 
-          
+          }
+
           if (value === 'false' || value === 'FALSE') {
             obj[key] = false;
             return;
           }
-          
-          // 숫자 처리
+
+          // 숫자 처리 (핫가격/아이스가격인 경우 항상 숫자로 변환 시도)
+          if ((key === 'hotPrice' || key === 'icePrice') && value !== '') {
+            obj[key] = Number(value);
+            return;
+          }
+
+          // 일반 숫자 처리
           if (!isNaN(Number(value)) && value.trim() !== '' && !value.startsWith('0')) {
             obj[key] = Number(value);
             return;
           }
-          
+
           // JSON 문자열 파싱 시도 (배열, 객체)
-          if (typeof value === 'string' && 
-              ((value.startsWith('[') && value.endsWith(']')) || 
-               (value.startsWith('{') && value.endsWith('}')))) {
+          if (typeof value === 'string' &&
+            ((value.startsWith('[') && value.endsWith(']')) ||
+              (value.startsWith('{') && value.endsWith('}')))) {
             try {
               obj[key] = JSON.parse(value);
               return;
@@ -232,14 +252,36 @@ export const SheetsService = {
               console.warn(`JSON 파싱 실패 (행 ${rowIndex + 2}, 열 "${key}"): ${e}`);
             }
           }
-          
+
           // 그 외 문자열
           obj[key] = value;
         });
-        
+
+        // 메뉴 데이터인 경우 핫/아이스 가격 확인
+        if (sheetName === 'menu') {
+          const menuItem = obj;
+
+          // 음료 카테고리이고 핫옵션이 있는데 핫가격이 없는 경우
+          if (menuItem.category === '음료' && menuItem.isHot === true && (menuItem.hotPrice === null || menuItem.hotPrice === undefined)) {
+            console.log(`[메뉴 보정] ${menuItem.name}의 핫가격이 없어 기본가격(${menuItem.price})으로 설정`);
+            menuItem.hotPrice = menuItem.price;
+          }
+
+          // 음료 카테고리이고 아이스옵션이 있는데 아이스가격이 없는 경우
+          if (menuItem.category === '음료' && menuItem.isIce === true && (menuItem.icePrice === null || menuItem.icePrice === undefined)) {
+            console.log(`[메뉴 보정] ${menuItem.name}의 아이스가격이 없어 기본가격(${menuItem.price})으로 설정`);
+            menuItem.icePrice = menuItem.price;
+          }
+
+          // 디버깅
+          if (menuItem.category === '음료') {
+            console.log(`[메뉴 결과] ${menuItem.name}: 핫=${menuItem.isHot}, 아이스=${menuItem.isIce}, 핫가격=${menuItem.hotPrice}, 아이스가격=${menuItem.icePrice}`);
+          }
+        }
+
         return obj;
       });
-      
+
       console.log(`시트 ${sheetName}에서 ${results.length}개 객체 로드 완료`);
       return results;
     } catch (error) {
@@ -247,23 +289,23 @@ export const SheetsService = {
       throw error;
     }
   },
-  
+
   // 7. 구글 시트에 데이터 업데이트 (개선된 버전)
   async updateSheetData(token: GoogleToken, spreadsheetId: string, sheetName: string, data: any[]) {
     try {
       // 시트가 존재하는지 확인
       const sheets = await this.getSheets(token, spreadsheetId);
       const sheetExists = sheets.some(sheet => sheet.title === sheetName);
-      
+
       // 시트가 없으면 생성
       if (!sheetExists) {
         console.log(`시트 "${sheetName}"가 존재하지 않아 새로 생성합니다.`);
         await this.createSheet(token, spreadsheetId, sheetName);
       }
-      
+
       // 기존 데이터가 있는지 확인
       const isEmpty = await this.isSheetEmpty(token, spreadsheetId, sheetName);
-      
+
       if (isEmpty) {
         // 1. 비어있으면 새 데이터 쓰기 (헤더 포함)
         console.log(`시트 ${sheetName}가 비어 있어 새로 데이터 작성`);
@@ -275,26 +317,26 @@ export const SheetsService = {
       } else {
         // 2. 기존 데이터가 있으면 기존 헤더 유지하면서 데이터 업데이트
         console.log(`시트 ${sheetName}에 기존 데이터 있음. 업데이트 시작`);
-        
+
         // 2-1. 기존 헤더 가져오기
         const encodedSheetName = encodeURIComponent(sheetName);
         const headerResult = await this.readData(token, spreadsheetId, `${encodedSheetName}!A1:Z1`);
         const headers = headerResult.values?.[0] || [];
-        
+
         if (headers.length === 0) {
           throw new Error('시트 헤더를 읽을 수 없습니다');
         }
-        
+
         console.log('기존 헤더:', headers);
-        
+
         // 2-2. 매핑 생성 (영어 키 <-> 한국어 컬럼명)
         const mapping = columnMappings[sheetName as keyof typeof columnMappings] || {};
         const reverseMapping: Record<string, string> = {};
-        
+
         Object.entries(mapping).forEach(([key, koreanName]) => {
           reverseMapping[koreanName] = key;
         });
-        
+
         // 2-3. 모든 데이터 행을 삭제 (헤더는 유지)
         const clearRange = `${encodeURIComponent(sheetName)}!A2:Z1000`;
         const clearResponse = await fetch(
@@ -307,14 +349,14 @@ export const SheetsService = {
             }
           }
         );
-        
+
         if (!clearResponse.ok) {
           const errorText = await clearResponse.text();
           throw new Error(`데이터 삭제 실패: ${errorText}`);
         }
-        
+
         console.log('기존 데이터 행 삭제 완료');
-        
+
         // 기존 헤더 정보를 이용해 데이터 행 구성
         const dataRows = data.map(item => {
           return headers.map((header: string) => {
@@ -324,9 +366,9 @@ export const SheetsService = {
             return sanitizeValue(value);
           });
         });
-        
+
         console.log(`${dataRows.length}개의 데이터 행 준비 완료`);
-        
+
         // 2-4. 데이터 추가 (append API 사용)
         if (dataRows.length > 0) {
           try {
@@ -346,13 +388,13 @@ export const SheetsService = {
                 })
               }
             );
-            
+
             if (!appendResponse.ok) {
               const errorData = await appendResponse.text();
               console.error(`데이터 추가 오류 응답:`, errorData);
               throw new Error(`데이터 추가 실패: ${appendResponse.status} - ${errorData}`);
             }
-            
+
             const appendResult = await appendResponse.json();
             console.log('데이터 추가 결과:', appendResult);
           } catch (appendError) {
@@ -362,9 +404,9 @@ export const SheetsService = {
         } else {
           console.log('추가할 데이터 없음');
         }
-        
+
         console.log(`시트 ${sheetName} 업데이트 완료`);
-      return true;
+        return true;
       }
     } catch (error) {
       console.error(`${sheetName} 시트 데이터 업데이트 실패:`, error);
@@ -393,6 +435,8 @@ const columnMappings: SheetMappings = {
     name: '메뉴명',
     displayName: '표시명',
     price: '가격',
+    hotPrice: '핫가격',
+    icePrice: '아이스가격',
     category: '카테고리',
     imageUrl: '이미지URL',
     description: '설명',
@@ -400,14 +444,12 @@ const columnMappings: SheetMappings = {
     isSoldOut: '품절여부',
     isHot: '핫옵션',
     isIce: '아이스옵션',
-    hotPrice: '핫가격',
-    icePrice: '아이스가격',
     options: '옵션',
     order: '정렬순서',
     relatedInventoryIds: '관련재고ID목록',
     priceInfo: '가격정보'
   },
-  
+
   // 재고 데이터 컬럼 매핑
   inventory: {
     id: '재고ID',
@@ -419,7 +461,7 @@ const columnMappings: SheetMappings = {
     category: '분류',
     relatedMenuIds: '관련메뉴ID목록'
   },
-  
+
   // 주문 데이터 컬럼 매핑
   orders: {
     id: '주문번호',
@@ -434,7 +476,7 @@ const columnMappings: SheetMappings = {
     completedAt: '완료시간',
     printed: '출력여부'
   },
-  
+
   // 쿠폰(선불권) 데이터 컬럼 매핑
   coupons: {
     id: '선불권ID',
@@ -455,22 +497,31 @@ export const convertJsonToSheetData = (jsonData: any[], sheetName: string = 'men
   if (!jsonData || !jsonData.length) {
     console.log(`${sheetName} 데이터가 없어 빈 헤더만 생성합니다.`);
     const mapping = columnMappings[sheetName as keyof typeof columnMappings] || {};
-    
+
     // 데이터가 없을 경우 기본 매핑의 한국어 컬럼명으로 헤더만 구성
     if (Object.keys(mapping).length > 0) {
+      // 메뉴 데이터인 경우 순서 지정
+      if (sheetName === 'menu') {
+        const orderedKeys = [
+          'id', 'name', 'price', 'hotPrice', 'icePrice', 'category',
+          'isSoldOut', 'isHot', 'isIce', 'order', 'relatedInventoryIds'
+        ];
+        return [orderedKeys.map(key => mapping[key] || key)];
+      }
+
       return [Object.values(mapping)];
     }
     return [[]];
   }
-  
+
   console.log(`[SheetService] ${sheetName} 데이터 변환 시작 (${jsonData.length}개 항목)`);
-  
+
   // 필드 검증 및 보완 (coupons 데이터인 경우)
   if (sheetName === 'coupons') {
     jsonData = jsonData.map((item, index) => {
       // balance 필드 확인 및 보완
       if (item.balance === undefined || item.balance === null) {
-        console.warn(`[SheetService] 쿠폰 #${index+1}(${item.code})의 balance 필드 누락, amount 값으로 설정`);
+        console.warn(`[SheetService] 쿠폰 #${index + 1}(${item.code})의 balance 필드 누락, amount 값으로 설정`);
         return {
           ...item,
           balance: item.amount
@@ -479,39 +530,125 @@ export const convertJsonToSheetData = (jsonData: any[], sheetName: string = 'men
       return item;
     });
   }
-  
-  // 헤더 행 (모든 키 추출)
-  const keys = Object.keys(jsonData[0]);
-  console.log(`[SheetService] ${sheetName} 데이터의 키 목록:`, keys);
-  
+
+  // 메뉴 데이터의 경우 hotPrice와 icePrice 필드 확인 및 보완
+  if (sheetName === 'menu') {
+    jsonData = jsonData.map((item, index) => {
+      const modified = { ...item };
+
+      // 음료 카테고리의 경우 핫/아이스 가격 데이터 확인
+      if (item.category === '음료') {
+        // 핫 옵션이 있는데 핫 가격이 없는 경우
+        if (item.isHot && (item.hotPrice === undefined || item.hotPrice === null)) {
+          console.warn(`[SheetService] 메뉴 #${index + 1}(${item.name})의 hotPrice 필드 누락, price 값으로 설정`);
+          modified.hotPrice = item.price;
+        }
+
+        // 아이스 옵션이 있는데 아이스 가격이 없는 경우
+        if (item.isIce && (item.icePrice === undefined || item.icePrice === null)) {
+          console.warn(`[SheetService] 메뉴 #${index + 1}(${item.name})의 icePrice 필드 누락, price 값으로 설정`);
+          modified.icePrice = item.price;
+        }
+      }
+
+      console.log(`[SheetService] 메뉴 #${index + 1}(${item.name}) - 카테고리: ${item.category}, isHot: ${item.isHot}, isIce: ${item.isIce}, hotPrice: ${modified.hotPrice}, icePrice: ${modified.icePrice}`);
+
+      return modified;
+    });
+  }
+
   // 해당 시트에 대한 매핑 가져오기 (없으면 기본 매핑 사용)
   const mapping = columnMappings[sheetName as keyof typeof columnMappings] || {};
-  
-  // 키를 한국어 컬럼명으로 변환 (매핑이 없는 경우 원래 키 사용)
-  const headers = keys.map(key => {
-    const koreanName = mapping[key];
-    if (!koreanName && sheetName === 'coupons') {
-      console.warn(`[SheetService] 주의: '${key}' 필드에 대한 한국어 매핑이 없습니다.`);
-    }
-    return koreanName || key;
-  });
-  
-  console.log(`[SheetService] ${sheetName} 최종 헤더:`, headers);
-  
-  // 데이터 행 추가 (정제 과정 포함)
-  const rows = jsonData.map((item, rowIndex) => {
-    return keys.map(key => {
-      const value = item[key];
-      
-      // coupons 데이터의 경우 중요 필드 로깅
-      if (sheetName === 'coupons' && (key === 'balance' || key === 'amount')) {
-        console.log(`[SheetService] 쿠폰 #${rowIndex+1}, ${key}: ${value}`);
-      }
-      
-      return sanitizeValue(value);
+
+  // 메뉴 데이터인 경우, 누락된 핵심 필드가 있는지 확인하고 키 목록에 추가
+  if (sheetName === 'menu') {
+    const essentialKeys = ['id', 'name', 'price', 'category', 'isHot', 'isIce', 'hotPrice', 'icePrice'];
+    // 모든 데이터에 필수 키가 존재하는지 확인
+    essentialKeys.forEach(key => {
+      jsonData.forEach((item, index) => {
+        if (item[key] === undefined) {
+          if (key === 'isHot' || key === 'isIce') {
+            item[key] = false;
+          } else if (key === 'hotPrice' || key === 'icePrice') {
+            item[key] = null;
+          } else {
+            item[key] = null;
+          }
+        }
+      });
     });
-  });
-  
-  // 헤더와 데이터 결합
-  return [headers, ...rows];
+
+    // 원하는 순서로 키 목록 정의
+    const orderedKeys = [
+      'id', 'name', 'price', 'hotPrice', 'icePrice', 'category',
+      'isSoldOut', 'isHot', 'isIce', 'order', 'relatedInventoryIds'
+    ];
+
+    // 명시적으로 순서가 지정된 키 목록과 그 외 키 목록 결합
+    const allKeys = new Set([
+      ...orderedKeys,
+      ...Object.keys(jsonData[0])
+    ]);
+
+    // 키를 한국어 컬럼명으로 변환 (매핑이 없는 경우 원래 키 사용)
+    const headers = Array.from(allKeys).map(key => {
+      const koreanName = mapping[key];
+      if (!koreanName) {
+        console.warn(`[SheetService] 주의: '${key}' 필드에 대한 한국어 매핑이 없습니다.`);
+      }
+      return koreanName || key;
+    });
+
+    console.log(`[SheetService] ${sheetName} 최종 헤더:`, headers);
+
+    // 명시적 순서 적용한 데이터 행 추가
+    const rows = jsonData.map((item, rowIndex) => {
+      return Array.from(allKeys).map(key => {
+        const value = item[key];
+
+        // 메뉴 데이터의 경우 가격 필드 로깅
+        if (key === 'price' || key === 'hotPrice' || key === 'icePrice') {
+          console.log(`[SheetService] 메뉴 #${rowIndex + 1}(${item.name}), ${key}: ${value}`);
+        }
+
+        return sanitizeValue(value);
+      });
+    });
+
+    // 헤더와 데이터 결합
+    return [headers, ...rows];
+  } else {
+    // 메뉴 데이터가 아닌 경우 기존 로직 유지
+    // 헤더 행 (모든 키 추출)
+    const keys = Object.keys(jsonData[0]);
+    console.log(`[SheetService] ${sheetName} 데이터의 키 목록:`, keys);
+
+    // 키를 한국어 컬럼명으로 변환 (매핑이 없는 경우 원래 키 사용)
+    const headers = keys.map(key => {
+      const koreanName = mapping[key];
+      if (!koreanName && sheetName === 'coupons') {
+        console.warn(`[SheetService] 주의: '${key}' 필드에 대한 한국어 매핑이 없습니다.`);
+      }
+      return koreanName || key;
+    });
+
+    console.log(`[SheetService] ${sheetName} 최종 헤더:`, headers);
+
+    // 데이터 행 추가 (정제 과정 포함)
+    const rows = jsonData.map((item, rowIndex) => {
+      return keys.map(key => {
+        const value = item[key];
+
+        // coupons 데이터의 경우 중요 필드 로깅
+        if (sheetName === 'coupons' && (key === 'balance' || key === 'amount')) {
+          console.log(`[SheetService] 쿠폰 #${rowIndex + 1}, ${key}: ${value}`);
+        }
+
+        return sanitizeValue(value);
+      });
+    });
+
+    // 헤더와 데이터 결합
+    return [headers, ...rows];
+  }
 }; 
