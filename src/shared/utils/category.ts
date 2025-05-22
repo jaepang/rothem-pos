@@ -2,7 +2,7 @@ import { Category, CategoryList } from '@/shared/types/menu'
 import { readFile, writeFile } from '@/shared/utils/file'
 import type { MenuItem, MenuList } from '@/shared/types/menu'
 
-const CATEGORY_FILE_PATH = 'categories.json'
+const CATEGORY_FILE_PATH = 'data/categories.json'
 
 export async function loadCategories(menuList?: MenuList): Promise<CategoryList> {
   try {

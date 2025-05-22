@@ -204,12 +204,12 @@ export const SheetsService = {
           }
           
           // 불린 값 처리
-          if (value === 'true') {
+          if (value === 'true' || value === 'TRUE') {
             obj[key] = true;
             return;
           } 
           
-          if (value === 'false') {
+          if (value === 'false' || value === 'FALSE') {
             obj[key] = false;
             return;
           }
