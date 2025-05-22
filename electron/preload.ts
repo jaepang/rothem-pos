@@ -113,7 +113,7 @@ try {
       loadInventoryFromJson: () => 
         ipcRenderer.invoke('inventory:loadFromJson'),
       saveInventoryToJson: (inventoryList: any) => 
-        ipcRenderer.invoke('inventory:saveInventoryToJson', inventoryList),
+        ipcRenderer.invoke('inventory:saveToJson', inventoryList),
     },
     orders: {
       loadOrdersFromJson: () => 
