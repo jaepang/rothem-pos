@@ -5,6 +5,7 @@ import { MenuManagement } from './renderer/components/menu/MenuManagement'
 import { CategoryManagement } from './renderer/components/menu/CategoryManagement'
 import { InventoryManagement } from './renderer/components/inventory/InventoryManagement'
 import { OrderHistory } from './renderer/components/order/OrderHistory'
+import { CouponManagement } from './renderer/components/coupon/CouponManagement'
 import { SettingsPage } from './renderer/components/settings/SettingsPage'
 import { DataService, useGoogleSheetAutoSync, SyncStatus } from './firebase/dataService'
 import { getCurrentUser, GoogleToken, checkRedirectResult } from './firebase/auth'
@@ -71,7 +72,7 @@ const AuthCallback = () => {
   );
 };
 
-type TabType = 'order' | 'menu' | 'category' | 'inventory' | 'history' | 'settings'
+type TabType = 'order' | 'menu' | 'category' | 'inventory' | 'history' | 'coupon' | 'settings'
 
 // AppContent - 메인 애플리케이션 컴포넌트
 const AppContent = () => {
@@ -223,6 +224,7 @@ const AppContent = () => {
       {activeTab === 'category' && <CategoryManagement />}
       {activeTab === 'inventory' && <InventoryManagement />}
       {activeTab === 'history' && <OrderHistory />}
+      {activeTab === 'coupon' && <CouponManagement />}
       {activeTab === 'settings' && <SettingsPage onLoginComplete={() => setIsLoginRequired(false)} />}
     </MainLayout>
   );
