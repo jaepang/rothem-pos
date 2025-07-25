@@ -267,7 +267,7 @@ export const exportOrdersToExcel = (orders: OrderList): void => {
 }
 
 export const importOrdersFromExcel = (file: File): Promise<OrderList> => {
-  return new Promise(async (resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader()
     
     reader.onload = async (e) => {

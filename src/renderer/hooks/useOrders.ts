@@ -121,10 +121,6 @@ export const useOrders = (isPrinterConnected: boolean) => {
       if (isPrinterConnected) {
         try {
           await printOrder(order)
-          const updatedOrder = { ...order, printed: true }
-          const ordersWithPrintedStatus = orders.map(o => o.id === order.id ? updatedOrder : o)
-          setOrders(ordersWithPrintedStatus)
-          await saveOrders(ordersWithPrintedStatus)
         } catch (error) {
           console.error('주문서 출력 실패:', error)
           alert('주문서 출력에 실패했습니다.')
