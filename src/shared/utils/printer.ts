@@ -20,6 +20,7 @@ export const getPrinterStatus = async (): Promise<boolean> => {
 export const printOrder = async (order: Order): Promise<void> => {
   try {
     await window.electronAPI.printer.printOrder(order)
+    await window.electronAPI.printer.printOrder(order)
   } catch (error) {
     console.error('주문서 출력 실패:', error)
     throw error
